@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Guillem Ortu — Portfolio</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://api.fontshare.com/v2/css?f[]=clash-display@200,300,400,500,600,700&f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --d: 'Clash Display', 'Helvetica Neue', sans-serif;
+      --b: 'Satoshi', 'Helvetica Neue', sans-serif;
+      --m: 'IBM Plex Mono', 'SF Mono', monospace;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { height: 100%; overflow: hidden; background: #0a0a0b; }
+    ::selection { background: #f59e0b30; color: #e8e6e1; }
+    @keyframes contentUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes contentDown {
+      from { opacity: 0; transform: translateY(-22px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes scrollHint {
+      0%, 100% { opacity: 0.4; transform: translateY(0); }
+      50% { opacity: 0.8; transform: translateY(4px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    /* ═══════════════════════════════════════════════
+       DATOS
+       ═══════════════════════════════════════════════ */
+    const C = {
+      bg: "#0a0a0b", bg2: "#111113", bg3: "#18181b",
+      text: "#e8e6e1", muted: "#8a8a8d", dim: "#555558",
+      mint: "#64ffda", indigo: "#818cf8", amber: "#f59e0b",
+    };
+
+    /* ═══════════════════════════════════════════════
+       i18n
+       ═══════════════════════════════════════════════ */
+    const T = {
+      es: {
+        slides: [
+          { label: "Sobre Mí" },
+          { label: "Periodismo" },
+          { label: "GiLDa" },
+          { label: "Extensiones" },
+        ],
+        orbital: ["Sobre Mí", "Periodismo", "IA Generativa"],
+        role: "Periodista · Desarrollo de Audiencias · Creador",
+        bio: ["25 años. Barcelona. La inquietud como motor. Más de 4 años en ", "El Periódico de Catalunya", ", ensayista en ", "GiLDa", " y creador por naturaleza."],
+        bioSub: "",
+        timeline: [
+          { text: "UAB · Periodismo" },
+          { text: "El Periódico · Becario" },
+          { text: "El Periódico · Cultura y Pantallas" },
+          { text: "El Periódico · Desarrollo de Audiencias" },
+          { text: "IEBS School · Máster IA + SEO" },
+          { text: "GiLDa" },
+        ],
+        journalTitle: "Periodista &",
+        journalTitle2: "Desarrollador de Audiencias",
+        journalDesc: ["Más de ", "4 años en la redacción", " de El Periódico de Catalunya. Del periodo de prácticas en Última hora a la especialización en desarrollo de audiencias."],
+        roles: [
+          { role: "Desarrollador de Audiencias", period: "2023 — Presente", desc: "Estrategia SEO, optimización para Google Discover y crecimiento de tráfico." },
+          { role: "Cultura y Pantallas", period: "2023 — 2024", desc: "Un año cubriendo cultura y pantallas" },
+          { role: "Becario — Última hora", period: "2022 — 2023", desc: null },
+        ],
+        authorLink: "Página de autor →",
+        essays: [
+          { title: "La irremediable crisis del mérito", sub: "Ganar sin sudar nos genera confusión", quote: "No será el material de la medalla el que marque el veredicto, sino la claridad con la que puedas explicar por qué la llevas" },
+          { title: "Programados para el juego", sub: "El vibe coding como patio de recreo", quote: "Crecimos jugando y el contexto actual nos ha devuelto la posibilidad de seguir haciéndolo" },
+          { title: "Cadenas deslabonadas", sub: "Del creador al censor", quote: "Del creador al censor: todos los roles que caben entre la IA y nosotros" },
+          { title: "Una conversación pendiente", sub: "La IA aprendió nuestro idioma, pero ¿y nosotros?", quote: "Configuramos sistemas para lenguaje natural pero les hablamos con voz robótica" },
+        ],
+        gildaTitle: "Newsletter GiLDa",
+        gildaDesc: "Ensayos semanales sobre las implicaciones de la IA. Cada sábado.",
+        gildaAll: "Todas las publicaciones en Substack →",
+        gildaAllUrl: "http://gildanewsroom.substack.com/",
+        read: "LEER →",
+        extTitle: "Extensiones de Chrome",
+        extDesc: ["Herramientas que agilizan flujos de trabajo. Más de ", "6 extensiones", " hasta la fecha — interfaz intuitiva y diseño cuidado."],
+        extDescs: [
+          "Portapapeles inteligente: guarda lo copiado y reabre la página de origen",
+          "Extracción automatizada de datos estructurados",
+          "En desarrollo",
+          "En desarrollo",
+          "En desarrollo",
+          "En desarrollo",
+        ],
+        extStatuses: { "Pública": "Pública", "Dev": "Dev" },
+        masterNote: "",
+        scroll: "Scroll",
+        swipe: "Swipe",
+      },
+      en: {
+        slides: [
+          { label: "About Me" },
+          { label: "Journalism" },
+          { label: "GiLDa" },
+          { label: "Extensions" },
+        ],
+        orbital: ["About Me", "Journalism", "Generative AI"],
+        role: "Journalist · Audience Development · Creator",
+        bio: ["25 years old. Barcelona. Driven by curiosity. Over 4 years at ", "El Periódico de Catalunya", ", essayist at ", "GiLDa", " and creator by nature."],
+        bioSub: "",
+        timeline: [
+          { text: "UAB · Journalism" },
+          { text: "El Periódico · Intern" },
+          { text: "El Periódico · Culture & Screens" },
+          { text: "El Periódico · Audience Development" },
+          { text: "IEBS School · Master's AI + SEO" },
+          { text: "GiLDa" },
+        ],
+        journalTitle: "Journalist &",
+        journalTitle2: "Audience Developer",
+        journalDesc: ["Over ", "4 years in the newsroom", " at El Periódico de Catalunya. From an internship in breaking news to specializing in audience development."],
+        roles: [
+          { role: "Audience Developer", period: "2023 — Present", desc: "SEO strategy, Google Discover optimization and traffic growth." },
+          { role: "Culture & Screens", period: "2023 — 2024", desc: "A year covering culture and screens" },
+          { role: "Intern — Breaking News", period: "2022 — 2023", desc: null },
+        ],
+        authorLink: "Author page →",
+        essays: [
+          { title: "The Unavoidable Crisis of Merit", sub: "Winning without sweating breeds confusion", quote: "It won't be the medal's material that marks the verdict, but the clarity with which you can explain why you're wearing it" },
+          { title: "Programmed to Play", sub: "Vibe coding as a playground", quote: "We grew up playing and the current context has given us back the chance to keep doing it" },
+          { title: "Unlinked Chains", sub: "From creator to censor", quote: "From creator to censor: all the roles that fit between AI and us" },
+          { title: "A Conversation We Still Need to Have", sub: "AI learned our language, but what about us?", quote: "We build systems for natural language but talk to them in robotic commands" },
+        ],
+        gildaTitle: "GiLDa Newsletter",
+        gildaDesc: "Weekly essays on the implications of AI. Every Saturday.",
+        gildaAll: "All publications on Substack →",
+        gildaAllUrl: "https://gildanewsroom.substack.com/s/gilda-en",
+        read: "READ →",
+        extTitle: "Chrome Extensions",
+        extDesc: ["Tools that streamline workflows. Over ", "6 extensions", " to date — intuitive interface and polished design."],
+        extDescs: [
+          "Smart clipboard: saves copied content and reopens the source page",
+          "Automated structured data extraction",
+          "In development",
+          "In development",
+          "In development",
+          "In development",
+        ],
+        extStatuses: { "Pública": "Public", "Dev": "Dev" },
+        masterNote: "",
+        scroll: "Scroll",
+        swipe: "Swipe",
+      },
+    };
+
+    const SLIDES = [
+      { id: "about",   section: 0, label: "Sobre Mí",   num: "01", color: C.mint },
+      { id: "journal", section: 1, label: "Periodismo",  num: "02", color: C.indigo },
+      { id: "gilda",   section: 2, label: "GiLDa",       num: "03", color: C.amber },
+      { id: "tools",   section: 2, label: "Extensiones", num: "03", color: C.amber },
+    ];
+
+    const ORBITAL_SECTIONS = [
+      { label: "Sobre Mí", color: C.mint },
+      { label: "Periodismo", color: C.indigo },
+      { label: "IA Generativa", color: C.amber },
+    ];
+
+    const ESSAYS = [
+      { num: "01", title: "La irremediable crisis del mérito", sub: "Ganar sin sudar nos genera confusión", date: "24 ene", quote: "No será el material de la medalla el que marque el veredicto, sino la claridad con la que puedas explicar por qué la llevas", url: "https://gildanewsroom.substack.com/p/la-irremediable-crisis-del-merito", urlEn: "https://gildanewsroom.substack.com/p/the-unavoidable-crisis-of-merit" },
+      { num: "02", title: "Programados para el juego", sub: "El vibe coding como patio de recreo", date: "31 ene", quote: "Crecimos jugando y el contexto actual nos ha devuelto la posibilidad de seguir haciéndolo", url: "https://gildanewsroom.substack.com/p/programados-para-el-juego", urlEn: "https://gildanewsroom.substack.com/p/programmed-to-play" },
+      { num: "03", title: "Cadenas deslabonadas", sub: "Del creador al censor", date: "07 feb", quote: "Del creador al censor: todos los roles que caben entre la IA y nosotros", url: "https://gildanewsroom.substack.com/p/cadenas-deslabonadas", urlEn: "https://gildanewsroom.substack.com/p/unlinked-chains" },
+      { num: "04", title: "Una conversación pendiente", sub: "La IA aprendió nuestro idioma, pero ¿y nosotros?", date: "14 feb", quote: "Configuramos sistemas para lenguaje natural pero les hablamos con voz robótica", url: "https://gildanewsroom.substack.com/p/una-conversacion-pendiente", urlEn: "https://gildanewsroom.substack.com/p/a-conversation-we-still-need-to-have" },
+    ];
+
+    const EXTENSIONS = [
+      { name: "Sourced", status: "Pública", desc: "Portapapeles inteligente: guarda lo copiado y reabre la página de origen", url: "https://chromewebstore.google.com/detail/gpjphilcigdnbjaoolahgaonanldgaog?utm_source=item-share-cb" },
+      { name: "Article Analyzer", status: "Pública", desc: "Extracción automatizada de datos estructurados", url: "https://chromewebstore.google.com/detail/ckocnombbaiidbmagkbhenelbfhkcnnh?utm_source=item-share-cb" },
+      { name: "GPS (Granular Page Segmentation)", status: "Dev", desc: "hidden" },
+      { name: "PromptCraft", status: "Dev", desc: "hidden" },
+      { name: "FocusModes", status: "Dev", desc: "hidden" },
+      { name: "Style Transformer", status: "Dev", desc: "hidden" },
+    ];
+
+    const TIMELINE = [
+      { year: "2018", text: "UAB · Periodismo", on: false },
+      { year: "2022", text: "El Periódico · Becario", on: false },
+      { year: "2023", text: "El Periódico · Cultura y Pantallas", on: false },
+      { year: "2023", text: "El Periódico · Desarrollo de Audiencias", on: true },
+      { year: "2025", text: "IEBS School · Máster IA + SEO", on: true },
+      { year: "2026", text: "GiLDa", on: true },
+    ];
+
+    /* ═══════════════════════════════════════════════
+       HOOK RESPONSIVE
+       ═══════════════════════════════════════════════ */
+    function useBP() {
+      const [bp, set] = useState(() => window.innerWidth < 768 ? "m" : window.innerWidth < 1080 ? "t" : "d");
+      useEffect(() => {
+        const f = () => set(window.innerWidth < 768 ? "m" : window.innerWidth < 1080 ? "t" : "d");
+        window.addEventListener("resize", f);
+        return () => window.removeEventListener("resize", f);
+      }, []);
+      return bp;
+    }
+
+    /* ═══════════════════════════════════════════════
+       LINK
+       ═══════════════════════════════════════════════ */
+    function Lnk({ href, color, children }) {
+      const [h, setH] = useState(false);
+      return (
+        <a href={href} target="_blank" rel="noopener noreferrer"
+          onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+          style={{
+            fontFamily: "var(--m)", fontSize: 12.5, color: h ? color : C.muted,
+            textDecoration: "none", letterSpacing: "0.06em",
+            display: "inline-flex", alignItems: "center", gap: 5,
+            position: "relative", paddingBottom: 2, transition: "color 0.3s",
+          }}>
+          {children}
+          <span style={{ position: "absolute", bottom: 0, left: 0, height: 1, background: color, width: h ? "100%" : "0%", transition: "width 0.35s cubic-bezier(0.16,1,0.3,1)" }} />
+        </a>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════
+       COPY EMAIL
+       ═══════════════════════════════════════════════ */
+    function CopyEmail({ color }) {
+      const [h, setH] = useState(false);
+      const [copied, setCopied] = useState(false);
+      const handleClick = () => {
+        navigator.clipboard.writeText("guillemortu.ia@gmail.com").then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      };
+      return (
+        <span
+          onClick={handleClick}
+          onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+          style={{
+            fontFamily: "var(--m)", fontSize: 12.5, color: h ? color : C.muted,
+            letterSpacing: "0.06em", cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 5,
+            position: "relative", paddingBottom: 2, transition: "color 0.3s",
+            userSelect: "none",
+          }}>
+          {copied ? "✓ Copied" : "Email →"}
+          <span style={{ position: "absolute", bottom: 0, left: 0, height: 1, background: color, width: h ? "100%" : "0%", transition: "width 0.35s cubic-bezier(0.16,1,0.3,1)" }} />
+        </span>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════
+       SISTEMA ORBITAL
+       ═══════════════════════════════════════════════ */
+    function Orbital({ activeSlide, bp, lang }) {
+      const t = T[lang];
+      const orbitSection = SLIDES[activeSlide]?.section ?? 0;
+      const accent = ORBITAL_SECTIONS[orbitSection]?.color || C.mint;
+      const m = bp === "m";
+
+      const frameSize = m ? 240 : bp === "t" ? 320 : 440;
+      const orbitR = m ? 87 : bp === "t" ? 120 : 165;
+      const actSz = m ? 85 : bp === "t" ? 120 : 155;
+      const inSz = m ? 39 : bp === "t" ? 50 : 64;
+
+      const raf = useRef();
+      const circleRefs = useRef([null, null, null]);
+      const innerRefs = useRef([null, null, null]);
+      const glowRefs = useRef([null, null, null]);
+      const trailRefs = useRef([null, null, null]);
+      const pathRef = useRef(null);
+
+      const timeRef = useRef(0);
+      const angleOffset = useRef(0);
+      const targetOffset = useRef(0);
+      const prevSection = useRef(orbitSection);
+      const burstSpeed = useRef(0);
+
+      useEffect(() => {
+        const spotlight = Math.PI * 0.78;
+        const base = orbitSection * ((2 * Math.PI) / 3);
+        targetOffset.current = spotlight - base;
+        if (prevSection.current !== orbitSection) {
+          burstSpeed.current = 2.5;
+          prevSection.current = orbitSection;
+        }
+      }, [orbitSection]);
+
+      useEffect(() => {
+        const BASE_SPEED = 0.12;
+        const SELF_SPEEDS = [18, -14, 22];
+        const LERP = 2.8;
+        let last = performance.now();
+
+        const tick = (now) => {
+          const dt = Math.min((now - last) / 1000, 0.1);
+          last = now;
+
+          burstSpeed.current *= Math.max(0, 1 - 3.0 * dt);
+          if (burstSpeed.current < 0.01) burstSpeed.current = 0;
+
+          const speed = BASE_SPEED + burstSpeed.current;
+          timeRef.current += dt * speed;
+
+          const diff = targetOffset.current - angleOffset.current;
+          angleOffset.current += diff * LERP * dt;
+
+          const t = timeRef.current;
+
+          for (let i = 0; i < 3; i++) {
+            const el = circleRefs.current[i];
+            const inner = innerRefs.current[i];
+            const glow = glowRefs.current[i];
+            const trail = trailRefs.current[i];
+            if (!el) continue;
+
+            const isAct = i === orbitSection;
+            const baseAngle = i * ((2 * Math.PI) / 3);
+            const angle = baseAngle + angleOffset.current + t;
+
+            const r = isAct ? orbitR * 1.12 : orbitR;
+            const x = Math.cos(angle) * r;
+            const y = Math.sin(angle) * r;
+            const sz = isAct ? actSz : inSz;
+
+            el.style.width = sz + "px";
+            el.style.height = sz + "px";
+            el.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
+
+            if (inner) {
+              const selfDeg = t * SELF_SPEEDS[i] * (1 / speed) * BASE_SPEED * 60;
+              inner.style.transform = `rotate(${selfDeg}deg)`;
+            }
+
+            if (glow) {
+              if (isAct) {
+                const breath = 0.5 + 0.5 * Math.sin(t * 8);
+                const spread = 28 + 10 * breath;
+                glow.style.opacity = "1";
+                glow.style.boxShadow = `0 0 ${spread}px ${ORBITAL_SECTIONS[i].color}${Math.round(8 + 6 * breath).toString(16).padStart(2, "0")}`;
+                glow.style.transform = `scale(${1 + 0.03 * breath})`;
+              } else {
+                glow.style.opacity = "0";
+              }
+            }
+
+            if (trail) {
+              if (isAct) {
+                const trailAngle = angle - 0.18;
+                const tx = Math.cos(trailAngle) * r;
+                const ty = Math.sin(trailAngle) * r;
+                trail.style.transform = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px))`;
+                trail.style.width = (sz * 0.85) + "px";
+                trail.style.height = (sz * 0.85) + "px";
+                trail.style.opacity = "0.25";
+                trail.style.borderColor = ORBITAL_SECTIONS[i].color + "20";
+              } else {
+                trail.style.opacity = "0";
+                trail.style.width = inSz + "px";
+                trail.style.height = inSz + "px";
+              }
+            }
+          }
+
+          if (pathRef.current) {
+            pathRef.current.style.transform = `rotate(${t * 15}deg)`;
+          }
+
+          raf.current = requestAnimationFrame(tick);
+        };
+
+        raf.current = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(raf.current);
+      }, [orbitR, actSz, inSz, orbitSection]);
+
+      return (
+        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+          <div style={{
+            width: frameSize, height: frameSize, borderRadius: "50%",
+            border: `1px solid ${C.dim}10`,
+            position: "relative",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {/* Glow */}
+            <div style={{
+              position: "absolute", width: "150%", height: "150%", borderRadius: "50%",
+              background: `radial-gradient(circle, ${accent}08 0%, transparent 55%)`,
+              transition: "background 1.2s ease", pointerEvents: "none",
+            }} />
+
+            {/* Orbit path */}
+            <div ref={pathRef} style={{
+              position: "absolute",
+              width: orbitR * 2 + 10, height: orbitR * 2 + 10,
+              borderRadius: "50%",
+              border: `1px dashed ${C.dim}18`,
+              pointerEvents: "none",
+            }} />
+
+            {/* Trail ghosts */}
+            {ORBITAL_SECTIONS.map((s, i) => (
+              <div key={"trail" + i} ref={el => trailRefs.current[i] = el} style={{
+                position: "absolute", left: "50%", top: "50%",
+                width: inSz, height: inSz, borderRadius: "50%",
+                border: "1px solid transparent", opacity: 0,
+                pointerEvents: "none", transition: "opacity 0.6s, border-color 0.6s",
+              }} />
+            ))}
+
+            {/* Circles */}
+            {ORBITAL_SECTIONS.map((s, i) => {
+              const isAct = i === orbitSection;
+              return (
+                <div key={i} ref={el => circleRefs.current[i] = el} style={{
+                  position: "absolute", left: "50%", top: "50%",
+                  width: inSz, height: inSz, borderRadius: "50%",
+                  border: `1.5px solid ${isAct ? s.color + "50" : C.dim + "25"}`,
+                  background: isAct ? s.color + "06" : "transparent",
+                  transition: "border-color 0.6s, background 0.6s",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  zIndex: isAct ? 3 : 2, willChange: "transform, width, height",
+                }}>
+                  <div ref={el => innerRefs.current[i] = el} style={{
+                    width: "78%", height: "78%", borderRadius: "50%",
+                    border: isAct ? `1.5px dashed ${s.color}30` : `1px dashed ${C.dim}18`,
+                    transition: "border-color 0.6s",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    willChange: "transform",
+                  }}>
+                    {isAct && (
+                      <div style={{
+                        width: "72%", height: "72%", borderRadius: "50%",
+                        border: `1px solid ${s.color}18`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <span style={{
+                          fontFamily: "var(--m)", fontSize: m ? 8 : 10.5,
+                          color: s.color, letterSpacing: "0.1em", textTransform: "uppercase",
+                          textAlign: "center", lineHeight: 1.2,
+                        }}>{t.orbital[i]}</span>
+                      </div>
+                    )}
+                    {!isAct && (
+                      <span style={{
+                        fontFamily: "var(--m)", fontSize: m ? 7.5 : 9,
+                        color: C.dim, letterSpacing: "0.08em", opacity: 0.5,
+                      }}>0{i + 1}</span>
+                    )}
+                  </div>
+                  <div ref={el => glowRefs.current[i] = el} style={{
+                    position: "absolute", inset: -11, borderRadius: "50%",
+                    border: `1px solid ${s.color}10`,
+                    boxShadow: `0 0 28px ${s.color}08`,
+                    opacity: 0, pointerEvents: "none", transition: "opacity 0.5s",
+                    willChange: "box-shadow, transform, opacity",
+                  }} />
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Name */}
+          <div style={{ position: "absolute", textAlign: "center", pointerEvents: "none", zIndex: 10 }}>
+            <div style={{
+              fontFamily: "var(--d)", fontSize: m ? 28 : bp === "t" ? 37 : 52,
+              fontWeight: 600, color: C.text, lineHeight: 1.0, letterSpacing: "-0.02em",
+            }}>Guillem</div>
+            <div style={{
+              fontFamily: "var(--d)", fontSize: m ? 28 : bp === "t" ? 37 : 52,
+              fontWeight: 400, fontStyle: "italic", color: C.text, lineHeight: 1.0, letterSpacing: "-0.02em",
+            }}>Ortu</div>
+            <div style={{
+              position: "absolute", inset: "-30px -40px", borderRadius: "50%",
+              background: `radial-gradient(ellipse, ${accent}0b 0%, transparent 70%)`,
+              transition: "background 1s", zIndex: -1,
+            }} />
+          </div>
+
+          {!m && (
+            <div style={{ position: "absolute", bottom: 20, textAlign: "center" }}>
+              <span style={{ fontFamily: "var(--m)", fontSize: 11, color: C.dim + "60", letterSpacing: "0.12em" }}>
+                {String(activeSlide + 1).padStart(2, "0")} / {String(SLIDES.length).padStart(2, "0")}
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════
+       SLIDES
+       ═══════════════════════════════════════════════ */
+
+    function SlideAbout({ bp, lang }) {
+      const m = bp === "m";
+      const i = T[lang];
+      return (
+        <div>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: m ? 16 : 20, marginBottom: m ? 16 : 22, flexWrap: "wrap" }}>
+            <div style={{
+              width: m ? 50 : 60, height: m ? 50 : 60, borderRadius: "50%",
+              background: `linear-gradient(135deg, ${C.mint}22, ${C.bg2})`,
+              border: `2px solid ${C.mint}1a`, flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+              <span style={{ fontFamily: "var(--d)", fontSize: m ? 21 : 24, fontWeight: 600, color: C.mint + "65" }}>G</span>
+            </div>
+            <div>
+              <h2 style={{ fontFamily: "var(--d)", fontSize: m ? 26 : "clamp(28px,3.2vw,38px)", fontWeight: 600, color: C.text, lineHeight: 1.1, marginBottom: 4 }}>
+                Guillem <em style={{ fontStyle: "italic", fontWeight: 400 }}>Ortu</em>
+              </h2>
+              <p style={{ fontFamily: "var(--m)", fontSize: m ? 11.5 : 12.5, color: C.mint, letterSpacing: "0.04em", margin: 0 }}>
+                {i.role}
+              </p>
+            </div>
+          </div>
+
+          <p style={{ fontFamily: "var(--b)", fontSize: m ? 15 : 16, color: C.muted, lineHeight: 1.7, marginBottom: m ? 16 : 22, maxWidth: 540 }}>
+            {i.bio[0]}<strong style={{ color: C.text, fontWeight: 500 }}>{i.bio[1]}</strong>{i.bio[2]}<strong style={{ color: C.amber, fontWeight: 500 }}>{i.bio[3]}</strong>{i.bio[4]}
+          </p>
+
+          <div style={{
+            display: "flex", flexDirection: m ? "row" : "column",
+            gap: m ? 0 : 7, marginBottom: m ? 16 : 22,
+            ...(m ? { flexWrap: "wrap", columnGap: 16, rowGap: 7 } : { borderLeft: `1px solid ${C.mint}1e`, paddingLeft: 16, marginLeft: 2 }),
+          }}>
+            {TIMELINE.map((tl, idx) => (
+              <div key={idx} style={{ display: "flex", gap: m ? 6 : 11, alignItems: "baseline" }}>
+                <span style={{ fontFamily: "var(--m)", fontSize: m ? 10.5 : 11.5, color: tl.on ? C.mint : C.dim, minWidth: m ? "auto" : 34 }}>{tl.year}</span>
+                <span style={{ fontFamily: "var(--b)", fontSize: m ? 12 : 14, color: tl.on ? C.text : C.muted }}>
+                  {i.timeline[idx].text}{tl.on && <span style={{ color: C.mint, fontSize: 9, marginLeft: 3 }}>●</span>}
+                </span>
+                {m && idx < TIMELINE.length - 1 && <span style={{ color: C.dim + "40", fontSize: 11, margin: "0 2px" }}>·</span>}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+            <Lnk href="https://www.linkedin.com/in/guillem-ortu-6a015816a" color={C.mint}>LinkedIn →</Lnk>
+            <CopyEmail color={C.mint} />
+          </div>
+        </div>
+      );
+    }
+
+    function SlideJournalism({ bp, lang }) {
+      const m = bp === "m";
+      const i = T[lang];
+      const borders = [C.indigo, C.indigo + "45", C.indigo + "20"];
+      const textCols = [C.text, C.muted, C.dim];
+      return (
+        <div>
+          <h2 style={{ fontFamily: "var(--d)", fontSize: m ? 24 : "clamp(26px,3vw,36px)", fontWeight: 600, color: C.text, lineHeight: 1.2, marginBottom: m ? 14 : 18 }}>
+            {i.journalTitle}{m ? " " : <br />}{i.journalTitle2}
+          </h2>
+          <p style={{ fontFamily: "var(--b)", fontSize: m ? 15 : 16, color: C.muted, lineHeight: 1.7, marginBottom: m ? 16 : 20, maxWidth: 540 }}>
+            {i.journalDesc[0]}<strong style={{ color: C.text, fontWeight: 500 }}>{i.journalDesc[1]}</strong>{i.journalDesc[2]}
+          </p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: m ? 14 : 18 }}>
+            {i.roles.map((item, idx) => (
+              <div key={idx} style={{ background: C.bg2, borderRadius: 9, padding: m ? "14px 16px" : "16px 18px", borderLeft: `3px solid ${borders[idx]}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 5, marginBottom: item.desc ? 5 : 0 }}>
+                  <span style={{ fontFamily: "var(--b)", fontSize: m ? 14 : 15, fontWeight: 500, color: textCols[idx] }}>{item.role}</span>
+                  <span style={{ fontFamily: "var(--m)", fontSize: 10.5, color: idx === 0 ? C.indigo : C.dim, letterSpacing: "0.04em" }}>{item.period}</span>
+                </div>
+                {item.desc && !m && <p style={{ fontFamily: "var(--b)", fontSize: m ? 12.5 : 14, color: C.muted, lineHeight: 1.5, margin: 0 }}>{item.desc}</p>}
+              </div>
+            ))}
+          </div>
+
+          <Lnk href="https://www.elperiodico.com/es/autor/guillem-ortu-1863882" color={C.indigo}>{i.authorLink}</Lnk>
+        </div>
+      );
+    }
+
+    function SlideGiLDa({ bp, lang }) {
+      const m = bp === "m";
+      const i = T[lang];
+      const [hov, setHov] = useState(-1);
+      return (
+        <div>
+          <div style={{ marginBottom: m ? 12 : 16 }}>
+            <h2 style={{ fontFamily: "var(--d)", fontSize: m ? 24 : "clamp(26px,3vw,36px)", fontWeight: 600, color: C.text, lineHeight: 1.2, marginBottom: 5 }}>
+              {i.gildaTitle}
+            </h2>
+            <p style={{ fontFamily: "var(--b)", fontSize: m ? 13 : 14.5, color: C.muted, lineHeight: 1.55 }}>
+              {i.gildaDesc} <span style={{ fontFamily: "var(--m)", fontSize: 11.5, color: C.amber }}>ES / EN</span>
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: m ? "1fr" : "repeat(2, 1fr)", gap: m ? 9 : 11 }}>
+            {ESSAYS.map((e, idx) => (
+              <a key={idx} href={lang === "en" ? e.urlEn : e.url} target="_blank" rel="noopener noreferrer"
+                onMouseEnter={() => setHov(idx)} onMouseLeave={() => setHov(-1)}
+                style={{
+                  background: hov === idx ? C.bg3 : C.bg2, borderRadius: 10,
+                  padding: m ? "14px 16px 12px" : "16px 18px 14px",
+                  border: `1px solid ${hov === idx ? C.amber + "22" : C.amber + "08"}`,
+                  transition: "all 0.3s cubic-bezier(0.16,1,0.3,1)",
+                  boxShadow: hov === idx ? `0 4px 20px ${C.amber}06` : "none",
+                  textDecoration: "none", display: "block", cursor: "pointer",
+                }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 7 }}>
+                  <span style={{ fontFamily: "var(--d)", fontSize: 23, fontWeight: 600, color: C.amber + "18", lineHeight: 1 }}>{e.num}</span>
+                  <span style={{ fontFamily: "var(--m)", fontSize: 10, color: C.dim, letterSpacing: "0.04em" }}>{e.date}</span>
+                </div>
+                <h3 style={{ fontFamily: "var(--d)", fontSize: m ? 15 : 15.5, fontWeight: 600, color: C.text, lineHeight: 1.3, marginBottom: 4 }}>{i.essays[idx].title}</h3>
+                <p style={{ fontFamily: "var(--b)", fontSize: 12.5, color: C.muted, lineHeight: 1.45, marginBottom: m ? 7 : 9 }}>{i.essays[idx].sub}</p>
+                <div style={{ borderTop: `1px solid ${C.amber}0c`, paddingTop: 7, display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 9 }}>
+                  <p style={{ fontFamily: "var(--b)", fontSize: 12, color: C.amber + "78", lineHeight: 1.5, fontStyle: "italic", margin: 0, flex: 1 }}>
+                    «{i.essays[idx].quote}»
+                  </p>
+                  <span style={{ fontFamily: "var(--m)", fontSize: 9.5, color: hov === idx ? C.amber : C.dim, letterSpacing: "0.06em", flexShrink: 0, transition: "color 0.3s" }}>{i.read}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+
+          <div style={{ marginTop: m ? 14 : 18 }}>
+            <Lnk href={i.gildaAllUrl} color={C.amber}>{i.gildaAll}</Lnk>
+          </div>
+        </div>
+      );
+    }
+
+    function SlideTools({ bp, lang }) {
+      const m = bp === "m";
+      const i = T[lang];
+      const [hov, setHov] = useState(-1);
+      const sc = { "Pública": C.mint, "Dev": C.amber };
+      return (
+        <div>
+          <div style={{ marginBottom: m ? 12 : 16 }}>
+            <h2 style={{ fontFamily: "var(--d)", fontSize: m ? 24 : "clamp(26px,3vw,36px)", fontWeight: 600, color: C.text, lineHeight: 1.2, marginBottom: 5 }}>
+              {i.extTitle}
+            </h2>
+            <p style={{ fontFamily: "var(--b)", fontSize: m ? 13 : 14.5, color: C.muted, lineHeight: 1.55, maxWidth: 480 }}>
+              {i.extDesc[0]}<strong style={{ color: C.text, fontWeight: 500 }}>{i.extDesc[1]}</strong>{i.extDesc[2]}
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {EXTENSIONS.map((ext, idx) => {
+              const Tag = ext.url ? "a" : "div";
+              const linkProps = ext.url ? { href: ext.url, target: "_blank", rel: "noopener noreferrer" } : {};
+              const statusLabel = i.extStatuses[ext.status] || ext.status;
+              const isDev = ext.desc === "hidden";
+              return (
+                <Tag key={idx} {...linkProps}
+                  onMouseEnter={() => setHov(idx)} onMouseLeave={() => setHov(-1)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 14,
+                    padding: m ? "12px 14px" : "13px 16px", borderRadius: 8,
+                    background: hov === idx ? C.bg2 : "transparent",
+                    border: `1px solid ${hov === idx ? (ext.url ? C.mint + "18" : C.amber + "10") : "transparent"}`,
+                    transition: "all 0.2s", textDecoration: "none",
+                    cursor: ext.url ? "pointer" : "default",
+                  }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 3, flexWrap: "wrap" }}>
+                      <span style={{ fontFamily: "var(--b)", fontSize: m ? 14.5 : 15, fontWeight: 500, color: isDev ? C.muted : C.text }}>{ext.name}</span>
+                      <span style={{
+                        fontFamily: "var(--m)", fontSize: 9.5, color: sc[ext.status] || C.dim,
+                        letterSpacing: "0.07em", textTransform: "uppercase",
+                        padding: "2px 7px", borderRadius: 3, border: `1px solid ${(sc[ext.status] || C.dim)}20`,
+                      }}>{statusLabel}</span>
+                    </div>
+                    <p style={{
+                      fontFamily: "var(--b)", fontSize: m ? 12.5 : 13, color: C.muted, lineHeight: 1.4, margin: 0,
+                      ...(isDev ? { filter: "blur(5px)", userSelect: "none", opacity: 0.5 } : {}),
+                    }}>{isDev ? "██████████████████████" : i.extDescs[idx]}</p>
+                  </div>
+                  {ext.url && (
+                    <span style={{ fontFamily: "var(--m)", fontSize: 10.5, color: hov === idx ? C.mint : C.dim, transition: "color 0.3s", flexShrink: 0 }}>→</span>
+                  )}
+                </Tag>
+              );
+            })}
+          </div>
+
+          {i.masterNote && <div style={{ marginTop: m ? 14 : 20 }}>
+            <p style={{ fontFamily: "var(--b)", fontSize: 12, color: C.dim, lineHeight: 1.55, marginBottom: 10 }}>
+              {i.masterNote}
+            </p>
+          </div>}
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════
+       APP
+       ═══════════════════════════════════════════════ */
+    function App() {
+      const [slide, setSlide] = useState(0);
+      const [direction, setDirection] = useState(1);
+      const [animKey, setAnimKey] = useState(0);
+      const [lang, setLang] = useState("es");
+      const [langHov, setLangHov] = useState(false);
+      const cooldown = useRef(false);
+      const bp = useBP();
+      const m = bp === "m";
+      const touchStart = useRef(null);
+      const i = T[lang];
+
+      const go = useCallback((delta) => {
+        if (cooldown.current) return;
+        const next = (slide + delta + SLIDES.length) % SLIDES.length;
+        cooldown.current = true;
+        setDirection(delta);
+        setSlide(next);
+        setAnimKey(k => k + 1);
+        setTimeout(() => { cooldown.current = false; }, 700);
+      }, [slide]);
+
+      useEffect(() => {
+        const handler = (e) => {
+          e.preventDefault();
+          if (Math.abs(e.deltaY) < 8) return;
+          go(e.deltaY > 0 ? 1 : -1);
+        };
+        window.addEventListener("wheel", handler, { passive: false });
+        return () => window.removeEventListener("wheel", handler);
+      }, [go]);
+
+      useEffect(() => {
+        const onStart = (e) => { touchStart.current = e.touches[0].clientY; };
+        const onEnd = (e) => {
+          if (touchStart.current === null) return;
+          const diff = touchStart.current - e.changedTouches[0].clientY;
+          if (Math.abs(diff) > 40) go(diff > 0 ? 1 : -1);
+          touchStart.current = null;
+        };
+        window.addEventListener("touchstart", onStart, { passive: true });
+        window.addEventListener("touchend", onEnd, { passive: true });
+        return () => { window.removeEventListener("touchstart", onStart); window.removeEventListener("touchend", onEnd); };
+      }, [go]);
+
+      const current = SLIDES[slide];
+      const slideLabel = i.slides[slide]?.label || current.label;
+      const slideComponents = [
+        <SlideAbout bp={bp} lang={lang} />,
+        <SlideJournalism bp={bp} lang={lang} />,
+        <SlideGiLDa bp={bp} lang={lang} />,
+        <SlideTools bp={bp} lang={lang} />,
+      ];
+
+      const enterAnim = direction > 0
+        ? "contentUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards"
+        : "contentDown 0.5s cubic-bezier(0.16,1,0.3,1) forwards";
+
+      return (
+        <div style={{
+          width: "100vw", height: "100vh", overflow: "hidden",
+          display: "flex", flexDirection: m ? "column" : "row",
+          background: C.bg, position: "relative",
+        }}>
+          {/* Language toggle — absolute top-right */}
+          <button
+            onClick={() => setLang(l => l === "es" ? "en" : "es")}
+            onMouseEnter={() => setLangHov(true)}
+            onMouseLeave={() => setLangHov(false)}
+            style={{
+              position: "absolute", top: m ? 10 : 16, right: m ? 14 : 20, zIndex: 50,
+              background: langHov ? C.bg3 : C.bg2,
+              border: `1px solid ${langHov ? C.text + "20" : C.dim + "18"}`,
+              borderRadius: 6, padding: m ? "6px 12px" : "7px 14px",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 7,
+              transition: "all 0.3s",
+            }}>
+            <span style={{
+              fontFamily: "var(--m)", fontSize: m ? 10.5 : 11.5,
+              color: lang === "es" ? C.text : C.dim,
+              fontWeight: lang === "es" ? 500 : 400,
+              transition: "color 0.3s",
+            }}>ES</span>
+            <span style={{
+              width: 1, height: 12,
+              background: C.dim + "40",
+            }} />
+            <span style={{
+              fontFamily: "var(--m)", fontSize: m ? 10.5 : 11.5,
+              color: lang === "en" ? C.text : C.dim,
+              fontWeight: lang === "en" ? 500 : 400,
+              transition: "color 0.3s",
+            }}>EN</span>
+          </button>
+
+          {/* Orbital */}
+          <div style={{
+            width: m ? "100%" : bp === "t" ? "38%" : "42%",
+            maxWidth: m ? "none" : bp === "t" ? 360 : 520,
+            height: m ? "36vh" : "100vh",
+            flexShrink: 0, position: "relative",
+            borderRight: m ? "none" : `1px solid ${C.dim}0a`,
+            borderBottom: m ? `1px solid ${C.dim}0a` : "none",
+          }}>
+            <Orbital activeSlide={slide} bp={bp} lang={lang} />
+          </div>
+
+          {/* Content */}
+          <div style={{ flex: 1, height: m ? "64vh" : "100vh", position: "relative", overflow: "hidden" }}>
+            {/* Top bar */}
+            <div style={{
+              position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
+              padding: m ? "12px 18px 8px" : "20px 36px 12px",
+              background: `linear-gradient(${C.bg}, ${C.bg}e8 60%, transparent)`,
+              display: "flex", justifyContent: "space-between", alignItems: "center",
+              pointerEvents: "none",
+            }}>
+              <span style={{
+                fontFamily: "var(--m)", fontSize: m ? 11 : 12, color: current.color,
+                letterSpacing: "0.12em", textTransform: "uppercase", transition: "color 0.5s",
+              }}>
+                {current.num} — {slideLabel}
+              </span>
+              <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                {SLIDES.map((s, idx) => (
+                  <div key={idx} style={{
+                    width: idx === slide ? 20 : 6, height: 6, borderRadius: 3,
+                    background: idx === slide ? s.color : C.dim + "30",
+                    transition: "all 0.5s cubic-bezier(0.16,1,0.3,1)",
+                  }} />
+                ))}
+              </div>
+            </div>
+
+            {/* Slide */}
+            <div key={animKey + "-" + lang} style={{
+              position: "absolute", inset: 0,
+              padding: m ? "46px 18px 20px" : bp === "t" ? "52px 28px 24px" : "56px 44px 28px",
+              animation: enterAnim,
+              display: "flex", alignItems: m ? "flex-start" : "center",
+              overflow: m ? "auto" : "hidden",
+            }}>
+              <div style={{ width: "100%", maxWidth: 640 }}>
+                {slideComponents[slide]}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 10,
+              padding: m ? "8px 18px 10px" : "12px 36px 16px",
+              background: `linear-gradient(transparent, ${C.bg}e0 40%, ${C.bg})`,
+              display: "flex", justifyContent: "space-between", alignItems: "flex-end",
+              pointerEvents: "none",
+            }}>
+              <span style={{ fontFamily: "var(--m)", fontSize: 10, color: C.dim + "45", letterSpacing: "0.1em" }}>
+                © 2026 GUILLEM ORTU
+              </span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <span style={{ fontFamily: "var(--m)", fontSize: 9.5, color: C.dim + "55", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  {m ? i.swipe : i.scroll}
+                </span>
+                <div style={{
+                  width: 1, height: 16,
+                  background: `linear-gradient(${C.dim}20, ${C.dim}60)`,
+                  animation: "scrollHint 2s ease-in-out infinite",
+                }} />
+              </div>
+              <span style={{ fontFamily: "var(--m)", fontSize: 10, color: C.dim + "45", letterSpacing: "0.1em" }}>
+                BARCELONA
+              </span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>
