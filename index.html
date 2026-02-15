@@ -717,6 +717,7 @@
       const bp = useBP();
       const m = bp === "m";
       const touchStart = useRef(null);
+      const scrollRef = useRef(null);
       const i = T[lang];
 
       const go = useCallback((delta) => {
@@ -726,6 +727,7 @@
         setDirection(delta);
         setSlide(next);
         setAnimKey(k => k + 1);
+        if (scrollRef.current) scrollRef.current.scrollTop = 0;
         setTimeout(() => { cooldown.current = false; }, 700);
       }, [slide]);
 
@@ -744,13 +746,26 @@
         const onEnd = (e) => {
           if (touchStart.current === null) return;
           const diff = touchStart.current - e.changedTouches[0].clientY;
-          if (Math.abs(diff) > 40) go(diff > 0 ? 1 : -1);
           touchStart.current = null;
+          if (Math.abs(diff) < 40) return;
+
+          /* On mobile, check if content is scrollable before changing slide */
+          const el = scrollRef.current;
+          if (el && m) {
+            const atTop = el.scrollTop <= 2;
+            const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+            /* Swipe up (next): only if already at bottom */
+            if (diff > 0 && !atBottom) return;
+            /* Swipe down (prev): only if already at top */
+            if (diff < 0 && !atTop) return;
+          }
+
+          go(diff > 0 ? 1 : -1);
         };
         window.addEventListener("touchstart", onStart, { passive: true });
         window.addEventListener("touchend", onEnd, { passive: true });
         return () => { window.removeEventListener("touchstart", onStart); window.removeEventListener("touchend", onEnd); };
-      }, [go]);
+      }, [go, m]);
 
       const current = SLIDES[slide];
       const slideLabel = i.slides[slide]?.label || current.label;
@@ -842,7 +857,7 @@
             </div>
 
             {/* Slide */}
-            <div key={animKey + "-" + lang} style={{
+            <div ref={scrollRef} key={animKey + "-" + lang} style={{
               position: "absolute", inset: 0,
               padding: m ? "46px 18px 20px" : bp === "t" ? "52px 28px 24px" : "56px 44px 28px",
               animation: enterAnim,
