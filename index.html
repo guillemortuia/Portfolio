@@ -536,17 +536,16 @@
           </p>
 
           <div style={{
-            display: "flex", flexDirection: m ? "row" : "column",
-            gap: m ? 0 : 7, marginBottom: m ? 16 : 22,
-            ...(m ? { flexWrap: "wrap", columnGap: 16, rowGap: 7 } : { borderLeft: `1px solid ${C.mint}1e`, paddingLeft: 16, marginLeft: 2 }),
+            display: "flex", flexDirection: "column",
+            gap: m ? 5 : 7, marginBottom: m ? 16 : 22,
+            ...(m ? { borderLeft: `1px solid ${C.mint}1e`, paddingLeft: 14, marginLeft: 2 } : { borderLeft: `1px solid ${C.mint}1e`, paddingLeft: 16, marginLeft: 2 }),
           }}>
             {TIMELINE.map((tl, idx) => (
-              <div key={idx} style={{ display: "flex", gap: m ? 6 : 11, alignItems: "baseline" }}>
-                <span style={{ fontFamily: "var(--m)", fontSize: m ? 10.5 : 11.5, color: tl.on ? C.mint : C.dim, minWidth: m ? "auto" : 34 }}>{tl.year}</span>
+              <div key={idx} style={{ display: "flex", gap: m ? 8 : 11, alignItems: "baseline" }}>
+                <span style={{ fontFamily: "var(--m)", fontSize: m ? 10.5 : 11.5, color: tl.on ? C.mint : C.dim, minWidth: m ? 30 : 34 }}>{tl.year}</span>
                 <span style={{ fontFamily: "var(--b)", fontSize: m ? 12 : 14, color: tl.on ? C.text : C.muted }}>
                   {i.timeline[idx].text}{tl.on && <span style={{ color: C.mint, fontSize: 9, marginLeft: 3 }}>●</span>}
                 </span>
-                {m && idx < TIMELINE.length - 1 && <span style={{ color: C.dim + "40", fontSize: 11, margin: "0 2px" }}>·</span>}
               </div>
             ))}
           </div>
@@ -753,7 +752,7 @@
           const el = scrollRef.current;
           if (el && m) {
             const atTop = el.scrollTop <= 2;
-            const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 2;
+            const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
             /* Swipe up (next): only if already at bottom */
             if (diff > 0 && !atBottom) return;
             /* Swipe down (prev): only if already at top */
