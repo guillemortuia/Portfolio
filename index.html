@@ -16,7 +16,7 @@
       --m: 'IBM Plex Mono', 'SF Mono', monospace;
     }
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body, #root { height: 100%; overflow: hidden; background: #0a0a0b; }
+    html, body, #root { height: 100%; height: 100dvh; overflow: hidden; background: #0a0a0b; }
     ::selection { background: #f59e0b30; color: #e8e6e1; }
     @keyframes contentUp {
       from { opacity: 0; transform: translateY(22px); }
@@ -525,6 +525,12 @@
               <h2 style={{ fontFamily: "var(--d)", fontSize: m ? 26 : "clamp(28px,3.2vw,38px)", fontWeight: 600, color: C.text, lineHeight: 1.1, marginBottom: 4 }}>
                 Guillem <em style={{ fontStyle: "italic", fontWeight: 400 }}>Ortu</em>
               </h2>
+              {m && (
+                <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 6 }}>
+                  <Lnk href="https://www.linkedin.com/in/guillem-ortu-6a015816a" color={C.mint}>LinkedIn →</Lnk>
+                  <CopyEmail color={C.mint} />
+                </div>
+              )}
               <p style={{ fontFamily: "var(--m)", fontSize: m ? 11.5 : 12.5, color: C.mint, letterSpacing: "0.04em", margin: 0 }}>
                 {i.role}
               </p>
@@ -550,10 +556,12 @@
             ))}
           </div>
 
-          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
-            <Lnk href="https://www.linkedin.com/in/guillem-ortu-6a015816a" color={C.mint}>LinkedIn →</Lnk>
-            <CopyEmail color={C.mint} />
-          </div>
+          {!m && (
+            <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+              <Lnk href="https://www.linkedin.com/in/guillem-ortu-6a015816a" color={C.mint}>LinkedIn →</Lnk>
+              <CopyEmail color={C.mint} />
+            </div>
+          )}
         </div>
       );
     }
@@ -746,7 +754,7 @@
           if (touchStart.current === null) return;
           const diff = touchStart.current - e.changedTouches[0].clientY;
           touchStart.current = null;
-          if (Math.abs(diff) < 40) return;
+          if (Math.abs(diff) < 60) return;
 
           /* On mobile, check if content is scrollable before changing slide */
           const el = scrollRef.current;
@@ -781,7 +789,7 @@
 
       return (
         <div style={{
-          width: "100vw", height: "100vh", overflow: "hidden",
+          width: "100vw", height: "100%", overflow: "hidden",
           display: "flex", flexDirection: m ? "column" : "row",
           background: C.bg, position: "relative",
         }}>
@@ -820,7 +828,7 @@
           <div style={{
             width: m ? "100%" : bp === "t" ? "38%" : "42%",
             maxWidth: m ? "none" : bp === "t" ? 360 : 520,
-            height: m ? "36vh" : "100vh",
+            height: m ? "36%" : "100%",
             flexShrink: 0, position: "relative",
             borderRight: m ? "none" : `1px solid ${C.dim}0a`,
             borderBottom: m ? `1px solid ${C.dim}0a` : "none",
@@ -829,7 +837,7 @@
           </div>
 
           {/* Content */}
-          <div style={{ flex: 1, height: m ? "64vh" : "100vh", position: "relative", overflow: "hidden" }}>
+          <div style={{ flex: 1, height: m ? "64%" : "100%", position: "relative", overflow: "hidden" }}>
             {/* Top bar */}
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
@@ -858,7 +866,7 @@
             {/* Slide */}
             <div ref={scrollRef} key={animKey + "-" + lang} style={{
               position: "absolute", inset: 0,
-              padding: m ? "46px 18px 20px" : bp === "t" ? "52px 28px 24px" : "56px 44px 28px",
+              padding: m ? "46px 18px 90px" : bp === "t" ? "52px 28px 24px" : "56px 44px 28px",
               animation: enterAnim,
               display: "flex", alignItems: m ? "flex-start" : "center",
               overflow: m ? "auto" : "hidden",
