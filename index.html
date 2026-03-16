@@ -799,11 +799,11 @@
                 boundaryAccum.current = "locked";
                 e.preventDefault();
 
-                /* Reset idle timer — once user fully stops (250ms no events), open the gate */
+                /* Reset idle timer — once user fully stops (800ms no events), open the gate */
                 clearTimeout(idleTimer);
                 idleTimer = setTimeout(() => {
                   boundaryAccum.current = "ready";
-                }, 250);
+                }, 800);
                 return;
               }
 
