@@ -768,11 +768,13 @@
 
       useEffect(() => {
         let idleTimer = null;
+        let lastEventTime = 0;
 
         const handler = (e) => {
-          if (Math.abs(e.deltaY) < 4) return;
+          if (Math.abs(e.deltaY) < 3) return;
           const el = scrollRef.current;
           const down = e.deltaY > 0;
+          const now = performance.now();
 
           if (el) {
             const atTop = el.scrollTop <= 2;
@@ -785,34 +787,47 @@
               if (!atBoundary) {
                 /* Not at boundary — scroll normally, lock the gate */
                 boundaryAccum.current = "locked";
+                lastEventTime = now;
                 return;
               }
 
               /*
-               * At boundary. Two states:
-               * "locked"  = still in the same gesture that brought us here → WALL
-               * "ready"   = user stopped scrolling and started a new gesture → allow change
+               * At boundary.
+               * "locked" = wall is up, absorb everything
+               * "ready"  = wall is down, next FRESH gesture passes through
                */
 
-              if (boundaryAccum.current !== "ready") {
-                /* WALL — absorb everything, no matter how hard */
+              if (boundaryAccum.current === "ready") {
+                /* Gate is open — but only accept if this looks like a new intentional gesture:
+                 * must have been >600ms since last wheel event (true gap between gestures) */
+                const gap = now - lastEventTime;
+                if (gap < 600) {
+                  /* Still residual inertia leaking through — keep blocking */
+                  e.preventDefault();
+                  lastEventTime = now;
+                  return;
+                }
+                /* Genuine new gesture — change section */
                 boundaryAccum.current = "locked";
+                clearTimeout(idleTimer);
+                lastEventTime = now;
+                /* fall through to go() */
+              } else {
+                /* WALL — absorb everything, no matter how hard */
                 e.preventDefault();
+                lastEventTime = now;
 
-                /* Reset idle timer — once user fully stops (800ms no events), open the gate */
+                /* After 600ms of silence, open the gate */
                 clearTimeout(idleTimer);
                 idleTimer = setTimeout(() => {
                   boundaryAccum.current = "ready";
-                }, 800);
+                }, 600);
                 return;
               }
-
-              /* Gate is open — user started a new scroll gesture at the boundary */
-              boundaryAccum.current = "locked";
-              clearTimeout(idleTimer);
             }
           }
 
+          lastEventTime = now;
           e.preventDefault();
           go(down ? 1 : -1);
         };
