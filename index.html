@@ -33,6 +33,16 @@
       0%, 100% { opacity: 0.4; transform: translateY(0); }
       50% { opacity: 0.8; transform: translateY(4px); }
     }
+    @keyframes bounceDown {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes bounceUp {
+      0% { transform: translateY(0); }
+      40% { transform: translateY(6px); }
+      100% { transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -741,129 +751,134 @@
       const cooldown = useRef(false);
       const bp = useBP();
       const m = bp === "m";
-      const touchStart = useRef(null);
       const scrollRef = useRef(null);
       const i = T[lang];
 
-      const boundaryAccum = useRef("locked");
+      const wallHit = useRef(false);
+      const lastWheelTime = useRef(0);
+      const bounceKey = useRef(0);
+      const [bounce, setBounce] = useState(null); /* "down" | "up" | null */
 
       const go = useCallback((delta) => {
         if (cooldown.current) return;
         const next = (slide + delta + SLIDES.length) % SLIDES.length;
         cooldown.current = true;
+        wallHit.current = false;
         setDirection(delta);
         setSlide(next);
         setAnimKey(k => k + 1);
         setTimeout(() => { cooldown.current = false; }, 700);
       }, [slide]);
 
-      /* Reset scroll to top AFTER the new slide mounts */
+      /* Reset scroll to top after new slide mounts */
       useEffect(() => {
-        boundaryAccum.current = "locked";
+        wallHit.current = false;
+        lastWheelTime.current = 0;
         const raf = requestAnimationFrame(() => {
           if (scrollRef.current) scrollRef.current.scrollTop = 0;
         });
         return () => cancelAnimationFrame(raf);
       }, [animKey]);
 
+      /* ── WHEEL (desktop / trackpad) ── */
       useEffect(() => {
-        let idleTimer = null;
-        let lastEventTime = 0;
+        const GESTURE_GAP = 200; /* ms — gap between two separate scroll gestures */
 
         const handler = (e) => {
           if (Math.abs(e.deltaY) < 3) return;
           const el = scrollRef.current;
           const down = e.deltaY > 0;
           const now = performance.now();
+          const gap = now - lastWheelTime.current;
 
+          /* Determine if we're at a boundary */
+          let atBoundary = true;
           if (el) {
             const atTop = el.scrollTop <= 2;
             const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
             const hasScroll = el.scrollHeight > el.clientHeight + 10;
 
             if (hasScroll) {
-              const atBoundary = (down && atBottom) || (!down && atTop);
+              atBoundary = (down && atBottom) || (!down && atTop);
 
               if (!atBoundary) {
-                /* Not at boundary — scroll normally, lock the gate */
-                boundaryAccum.current = "locked";
-                lastEventTime = now;
-                return;
-              }
-
-              /*
-               * At boundary.
-               * "locked" = wall is up, absorb everything
-               * "ready"  = wall is down, next FRESH gesture passes through
-               */
-
-              if (boundaryAccum.current === "ready") {
-                /* Gate is open — but only accept if this looks like a new intentional gesture:
-                 * must have been >600ms since last wheel event (true gap between gestures) */
-                const gap = now - lastEventTime;
-                if (gap < 600) {
-                  /* Still residual inertia leaking through — keep blocking */
-                  e.preventDefault();
-                  lastEventTime = now;
-                  return;
-                }
-                /* Genuine new gesture — change section */
-                boundaryAccum.current = "locked";
-                clearTimeout(idleTimer);
-                lastEventTime = now;
-                /* fall through to go() */
-              } else {
-                /* WALL — absorb everything, no matter how hard */
-                e.preventDefault();
-                lastEventTime = now;
-
-                /* After 600ms of silence, open the gate */
-                clearTimeout(idleTimer);
-                idleTimer = setTimeout(() => {
-                  boundaryAccum.current = "ready";
-                }, 600);
+                /* Still scrolling through content — reset wall, let browser scroll */
+                wallHit.current = false;
+                lastWheelTime.current = now;
                 return;
               }
             }
           }
 
-          lastEventTime = now;
+          /* We're at a boundary (or content doesn't scroll) */
           e.preventDefault();
+
+          if (!wallHit.current) {
+            /* First hit — raise the wall, trigger bounce */
+            wallHit.current = true;
+            lastWheelTime.current = now;
+            setBounce(down ? "down" : "up");
+            bounceKey.current++;
+            return;
+          }
+
+          /* Wall is already up */
+          if (gap < GESTURE_GAP) {
+            /* Same gesture (inertia) — keep blocking */
+            lastWheelTime.current = now;
+            return;
+          }
+
+          /* New gesture after a real pause — pass through */
+          lastWheelTime.current = now;
           go(down ? 1 : -1);
         };
+
         window.addEventListener("wheel", handler, { passive: false });
-        return () => {
-          window.removeEventListener("wheel", handler);
-          clearTimeout(idleTimer);
-        };
+        return () => window.removeEventListener("wheel", handler);
       }, [go]);
 
+      /* ── TOUCH (mobile / tablet) ── */
       useEffect(() => {
-        const onStart = (e) => { touchStart.current = e.touches[0].clientY; };
+        let startY = null;
+        let startScrollTop = null;
+
+        const onStart = (e) => {
+          startY = e.touches[0].clientY;
+          startScrollTop = scrollRef.current ? scrollRef.current.scrollTop : 0;
+        };
         const onEnd = (e) => {
-          if (touchStart.current === null) return;
-          const diff = touchStart.current - e.changedTouches[0].clientY;
-          touchStart.current = null;
+          if (startY === null) return;
+          const diff = startY - e.changedTouches[0].clientY;
+          startY = null;
           if (Math.abs(diff) < 60) return;
 
-          /* Check if content is scrollable before changing slide */
           const el = scrollRef.current;
+          const down = diff > 0;
+
           if (el) {
             const atTop = el.scrollTop <= 2;
             const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
             const hasScroll = el.scrollHeight > el.clientHeight + 10;
+
             if (hasScroll) {
-              if (diff > 0 && !atBottom) return;
-              if (diff < 0 && !atTop) return;
+              const atBoundary = (down && atBottom) || (!down && atTop);
+              if (!atBoundary) return;
+
+              /* On touch, check if we were already at boundary when gesture started */
+              const wasAtTop = startScrollTop <= 2;
+              const wasAtBottom = startScrollTop + el.clientHeight >= el.scrollHeight - 40;
+              const wasAtBoundary = (down && wasAtBottom) || (!down && wasAtTop);
+              if (!wasAtBoundary) return; /* gesture scrolled TO boundary, don't jump yet */
             }
           }
 
-          go(diff > 0 ? 1 : -1);
+          go(down ? 1 : -1);
         };
         window.addEventListener("touchstart", onStart, { passive: true });
         window.addEventListener("touchend", onEnd, { passive: true });
         return () => { window.removeEventListener("touchstart", onStart); window.removeEventListener("touchend", onEnd); };
-      }, [go, m]);
+      }, [go]);
 
       const current = SLIDES[slide];
       const slideLabel = i.slides[slide]?.label || current.label;
@@ -961,7 +976,11 @@
               animation: enterAnim,
               overflowY: "auto", overflowX: "hidden",
             }}>
-              <div style={{ width: "100%", maxWidth: 640 }}>
+              <div key={bounceKey.current} style={{
+                width: "100%", maxWidth: 640,
+                animation: bounce ? `bounce${bounce === "down" ? "Down" : "Up"} 0.25s ease-out` : "none",
+              }}
+              onAnimationEnd={() => setBounce(null)}>
                 {slideComponents[slide]}
               </div>
             </div>
