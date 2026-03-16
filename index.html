@@ -33,16 +33,6 @@
       0%, 100% { opacity: 0.4; transform: translateY(0); }
       50% { opacity: 0.8; transform: translateY(4px); }
     }
-    @keyframes bounceDown {
-      0% { transform: translateY(0); }
-      40% { transform: translateY(-6px); }
-      100% { transform: translateY(0); }
-    }
-    @keyframes bounceUp {
-      0% { transform: translateY(0); }
-      40% { transform: translateY(6px); }
-      100% { transform: translateY(0); }
-    }
   </style>
 </head>
 <body>
@@ -754,16 +744,13 @@
       const scrollRef = useRef(null);
       const i = T[lang];
 
-      const wallHit = useRef(false);
       const lastWheelTime = useRef(0);
-      const bounceKey = useRef(0);
-      const [bounce, setBounce] = useState(null); /* "down" | "up" | null */
+      const gestureStartTop = useRef(null);
 
       const go = useCallback((delta) => {
         if (cooldown.current) return;
         const next = (slide + delta + SLIDES.length) % SLIDES.length;
         cooldown.current = true;
-        wallHit.current = false;
         setDirection(delta);
         setSlide(next);
         setAnimKey(k => k + 1);
@@ -772,7 +759,7 @@
 
       /* Reset scroll to top after new slide mounts */
       useEffect(() => {
-        wallHit.current = false;
+        gestureStartTop.current = null;
         lastWheelTime.current = 0;
         const raf = requestAnimationFrame(() => {
           if (scrollRef.current) scrollRef.current.scrollTop = 0;
@@ -780,57 +767,57 @@
         return () => cancelAnimationFrame(raf);
       }, [animKey]);
 
-      /* ── WHEEL (desktop / trackpad) ── */
+      /* ── WHEEL (desktop / trackpad) ── 
+         Mirrors the mobile touch logic exactly:
+         "Was I already at the boundary when this gesture started?"
+         - Yes → change section
+         - No  → wall (the gesture scrolled me here, don't jump)
+      */
       useEffect(() => {
-        const GESTURE_GAP = 200; /* ms — gap between two separate scroll gestures */
+        const GESTURE_GAP = 150;
 
         const handler = (e) => {
           if (Math.abs(e.deltaY) < 3) return;
           const el = scrollRef.current;
+          if (!el) return;
           const down = e.deltaY > 0;
           const now = performance.now();
           const gap = now - lastWheelTime.current;
 
-          /* Determine if we're at a boundary */
-          let atBoundary = true;
-          if (el) {
-            const atTop = el.scrollTop <= 2;
-            const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
-            const hasScroll = el.scrollHeight > el.clientHeight + 10;
-
-            if (hasScroll) {
-              atBoundary = (down && atBottom) || (!down && atTop);
-
-              if (!atBoundary) {
-                /* Still scrolling through content — reset wall, let browser scroll */
-                wallHit.current = false;
-                lastWheelTime.current = now;
-                return;
-              }
-            }
+          /* Detect new gesture: first event, or gap since last event */
+          if (gestureStartTop.current === null || gap > GESTURE_GAP) {
+            gestureStartTop.current = el.scrollTop;
           }
-
-          /* We're at a boundary (or content doesn't scroll) */
-          e.preventDefault();
-
-          if (!wallHit.current) {
-            /* First hit — raise the wall, trigger bounce */
-            wallHit.current = true;
-            lastWheelTime.current = now;
-            setBounce(down ? "down" : "up");
-            bounceKey.current++;
-            return;
-          }
-
-          /* Wall is already up */
-          if (gap < GESTURE_GAP) {
-            /* Same gesture (inertia) — keep blocking */
-            lastWheelTime.current = now;
-            return;
-          }
-
-          /* New gesture after a real pause — pass through */
           lastWheelTime.current = now;
+
+          const atTop = el.scrollTop <= 2;
+          const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+          const hasScroll = el.scrollHeight > el.clientHeight + 10;
+
+          if (hasScroll) {
+            const atBoundary = (down && atBottom) || (!down && atTop);
+
+            if (!atBoundary) {
+              /* Not at boundary — let browser scroll normally */
+              return;
+            }
+
+            /* At boundary — was I ALREADY here when this gesture started? */
+            const gsTop = gestureStartTop.current;
+            const wasAtTop = gsTop <= 2;
+            const wasAtBottom = gsTop + el.clientHeight >= el.scrollHeight - 10;
+            const wasAtBoundary = (down && wasAtBottom) || (!down && wasAtTop);
+
+            if (!wasAtBoundary) {
+              /* This gesture scrolled me TO the boundary — WALL */
+              e.preventDefault();
+              return;
+            }
+
+            /* I was already at boundary when gesture started — pass through */
+          }
+
+          e.preventDefault();
           go(down ? 1 : -1);
         };
 
@@ -976,11 +963,7 @@
               animation: enterAnim,
               overflowY: "auto", overflowX: "hidden",
             }}>
-              <div key={bounceKey.current} style={{
-                width: "100%", maxWidth: 640,
-                animation: bounce ? `bounce${bounce === "down" ? "Down" : "Up"} 0.25s ease-out` : "none",
-              }}
-              onAnimationEnd={() => setBounce(null)}>
+              <div style={{ width: "100%", maxWidth: 640 }}>
                 {slideComponents[slide]}
               </div>
             </div>
