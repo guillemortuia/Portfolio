@@ -747,6 +747,7 @@
 
       const boundaryAccum = useRef(0);
       const lastBoundary = useRef(null);
+      const boundaryHitTime = useRef(0);
 
       const go = useCallback((delta) => {
         if (cooldown.current) return;
@@ -762,6 +763,7 @@
       useEffect(() => {
         boundaryAccum.current = 0;
         lastBoundary.current = null;
+        boundaryHitTime.current = 0;
         const raf = requestAnimationFrame(() => {
           if (scrollRef.current) scrollRef.current.scrollTop = 0;
         });
@@ -780,33 +782,44 @@
             const hasScroll = el.scrollHeight > el.clientHeight + 10;
 
             if (hasScroll) {
-              /* Content is scrollable — check boundaries */
               const atBoundary = (down && atBottom) || (!down && atTop);
 
               if (!atBoundary) {
-                /* Not at boundary — let browser scroll the content */
+                /* Not at boundary — scroll normally */
                 boundaryAccum.current = 0;
                 lastBoundary.current = null;
+                boundaryHitTime.current = 0;
                 return;
               }
 
-              /* At boundary — accumulate scroll to require deliberate intent */
+              const now = Date.now();
               const dir = down ? "down" : "up";
-              if (lastBoundary.current !== dir) {
+
+              /* First time hitting this boundary — set the wall */
+              if (lastBoundary.current !== dir || boundaryHitTime.current === 0) {
                 boundaryAccum.current = 0;
                 lastBoundary.current = dir;
+                boundaryHitTime.current = now;
               }
-              boundaryAccum.current += Math.abs(e.deltaY);
 
-              if (boundaryAccum.current < 120) {
-                /* Not enough intent yet — absorb the event */
+              /* Must wait at least 400ms at the wall before we start counting */
+              if (now - boundaryHitTime.current < 400) {
                 e.preventDefault();
                 return;
               }
 
-              /* Enough accumulated — change section */
+              /* After the pause, accumulate deliberate scroll */
+              boundaryAccum.current += Math.abs(e.deltaY);
+
+              if (boundaryAccum.current < 80) {
+                e.preventDefault();
+                return;
+              }
+
+              /* Gate passed — change section */
               boundaryAccum.current = 0;
               lastBoundary.current = null;
+              boundaryHitTime.current = 0;
             }
           }
 
