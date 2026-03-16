@@ -745,9 +745,7 @@
       const scrollRef = useRef(null);
       const i = T[lang];
 
-      const boundaryAccum = useRef(0);
-      const lastBoundary = useRef(null);
-      const boundaryHitTime = useRef(0);
+      const boundaryAccum = useRef("locked");
 
       const go = useCallback((delta) => {
         if (cooldown.current) return;
@@ -761,9 +759,7 @@
 
       /* Reset scroll to top AFTER the new slide mounts */
       useEffect(() => {
-        boundaryAccum.current = 0;
-        lastBoundary.current = null;
-        boundaryHitTime.current = 0;
+        boundaryAccum.current = "locked";
         const raf = requestAnimationFrame(() => {
           if (scrollRef.current) scrollRef.current.scrollTop = 0;
         });
@@ -771,6 +767,8 @@
       }, [animKey]);
 
       useEffect(() => {
+        let idleTimer = null;
+
         const handler = (e) => {
           if (Math.abs(e.deltaY) < 4) return;
           const el = scrollRef.current;
@@ -785,41 +783,33 @@
               const atBoundary = (down && atBottom) || (!down && atTop);
 
               if (!atBoundary) {
-                /* Not at boundary — scroll normally */
-                boundaryAccum.current = 0;
-                lastBoundary.current = null;
-                boundaryHitTime.current = 0;
+                /* Not at boundary — scroll normally, lock the gate */
+                boundaryAccum.current = "locked";
                 return;
               }
 
-              const now = Date.now();
-              const dir = down ? "down" : "up";
+              /*
+               * At boundary. Two states:
+               * "locked"  = still in the same gesture that brought us here → WALL
+               * "ready"   = user stopped scrolling and started a new gesture → allow change
+               */
 
-              /* First time hitting this boundary — set the wall */
-              if (lastBoundary.current !== dir || boundaryHitTime.current === 0) {
-                boundaryAccum.current = 0;
-                lastBoundary.current = dir;
-                boundaryHitTime.current = now;
-              }
-
-              /* Must wait at least 400ms at the wall before we start counting */
-              if (now - boundaryHitTime.current < 400) {
+              if (boundaryAccum.current !== "ready") {
+                /* WALL — absorb everything, no matter how hard */
+                boundaryAccum.current = "locked";
                 e.preventDefault();
+
+                /* Reset idle timer — once user fully stops (250ms no events), open the gate */
+                clearTimeout(idleTimer);
+                idleTimer = setTimeout(() => {
+                  boundaryAccum.current = "ready";
+                }, 250);
                 return;
               }
 
-              /* After the pause, accumulate deliberate scroll */
-              boundaryAccum.current += Math.abs(e.deltaY);
-
-              if (boundaryAccum.current < 80) {
-                e.preventDefault();
-                return;
-              }
-
-              /* Gate passed — change section */
-              boundaryAccum.current = 0;
-              lastBoundary.current = null;
-              boundaryHitTime.current = 0;
+              /* Gate is open — user started a new scroll gesture at the boundary */
+              boundaryAccum.current = "locked";
+              clearTimeout(idleTimer);
             }
           }
 
@@ -827,7 +817,10 @@
           go(down ? 1 : -1);
         };
         window.addEventListener("wheel", handler, { passive: false });
-        return () => window.removeEventListener("wheel", handler);
+        return () => {
+          window.removeEventListener("wheel", handler);
+          clearTimeout(idleTimer);
+        };
       }, [go]);
 
       useEffect(() => {
