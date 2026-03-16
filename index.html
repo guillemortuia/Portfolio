@@ -745,6 +745,9 @@
       const scrollRef = useRef(null);
       const i = T[lang];
 
+      const boundaryAccum = useRef(0);
+      const lastBoundary = useRef(null);
+
       const go = useCallback((delta) => {
         if (cooldown.current) return;
         const next = (slide + delta + SLIDES.length) % SLIDES.length;
@@ -752,26 +755,63 @@
         setDirection(delta);
         setSlide(next);
         setAnimKey(k => k + 1);
-        if (scrollRef.current) scrollRef.current.scrollTop = 0;
         setTimeout(() => { cooldown.current = false; }, 700);
       }, [slide]);
 
+      /* Reset scroll to top AFTER the new slide mounts */
+      useEffect(() => {
+        boundaryAccum.current = 0;
+        lastBoundary.current = null;
+        const raf = requestAnimationFrame(() => {
+          if (scrollRef.current) scrollRef.current.scrollTop = 0;
+        });
+        return () => cancelAnimationFrame(raf);
+      }, [animKey]);
+
       useEffect(() => {
         const handler = (e) => {
-          if (Math.abs(e.deltaY) < 8) return;
+          if (Math.abs(e.deltaY) < 4) return;
           const el = scrollRef.current;
+          const down = e.deltaY > 0;
+
           if (el) {
             const atTop = el.scrollTop <= 2;
             const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
             const hasScroll = el.scrollHeight > el.clientHeight + 10;
-            /* If content is scrollable and not at boundary, let it scroll naturally */
+
             if (hasScroll) {
-              if (e.deltaY > 0 && !atBottom) return;
-              if (e.deltaY < 0 && !atTop) return;
+              /* Content is scrollable — check boundaries */
+              const atBoundary = (down && atBottom) || (!down && atTop);
+
+              if (!atBoundary) {
+                /* Not at boundary — let browser scroll the content */
+                boundaryAccum.current = 0;
+                lastBoundary.current = null;
+                return;
+              }
+
+              /* At boundary — accumulate scroll to require deliberate intent */
+              const dir = down ? "down" : "up";
+              if (lastBoundary.current !== dir) {
+                boundaryAccum.current = 0;
+                lastBoundary.current = dir;
+              }
+              boundaryAccum.current += Math.abs(e.deltaY);
+
+              if (boundaryAccum.current < 120) {
+                /* Not enough intent yet — absorb the event */
+                e.preventDefault();
+                return;
+              }
+
+              /* Enough accumulated — change section */
+              boundaryAccum.current = 0;
+              lastBoundary.current = null;
             }
           }
+
           e.preventDefault();
-          go(e.deltaY > 0 ? 1 : -1);
+          go(down ? 1 : -1);
         };
         window.addEventListener("wheel", handler, { passive: false });
         return () => window.removeEventListener("wheel", handler);
@@ -785,15 +825,16 @@
           touchStart.current = null;
           if (Math.abs(diff) < 60) return;
 
-          /* On mobile, check if content is scrollable before changing slide */
+          /* Check if content is scrollable before changing slide */
           const el = scrollRef.current;
-          if (el && m) {
+          if (el) {
             const atTop = el.scrollTop <= 2;
             const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 40;
-            /* Swipe up (next): only if already at bottom */
-            if (diff > 0 && !atBottom) return;
-            /* Swipe down (prev): only if already at top */
-            if (diff < 0 && !atTop) return;
+            const hasScroll = el.scrollHeight > el.clientHeight + 10;
+            if (hasScroll) {
+              if (diff > 0 && !atBottom) return;
+              if (diff < 0 && !atTop) return;
+            }
           }
 
           go(diff > 0 ? 1 : -1);
@@ -897,8 +938,7 @@
               position: "absolute", inset: 0,
               padding: m ? "46px 18px 90px" : bp === "t" ? "52px 28px 60px" : "56px 44px 60px",
               animation: enterAnim,
-              display: "flex", alignItems: "flex-start",
-              overflow: "auto",
+              overflowY: "auto", overflowX: "hidden",
             }}>
               <div style={{ width: "100%", maxWidth: 640 }}>
                 {slideComponents[slide]}
