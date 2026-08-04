@@ -16,7 +16,13 @@
       --m: 'IBM Plex Mono', 'SF Mono', monospace;
     }
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body, #root { height: 100%; height: 100dvh; overflow: hidden; background: #0a0a0b; }
+    html, body {
+      height: 100%; width: 100%; max-width: 100%;
+      overflow: hidden; overscroll-behavior: none; background: #0a0a0b;
+    }
+    /* position:fixed se ancla al viewport real del navegador, también dentro
+       de webviews embebidos (LinkedIn, Instagram…), donde 100vh/100vw mienten */
+    #root { position: fixed; inset: 0; overflow: hidden; background: #0a0a0b; }
     ::selection { background: #f59e0b30; color: #e8e6e1; }
     /* Hide scrollbar but keep scrolling */
     [data-scroll] { scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior: contain; }
@@ -276,14 +282,65 @@
     /* ═══════════════════════════════════════════════
        HOOK RESPONSIVE
        ═══════════════════════════════════════════════ */
-    function useBP() {
-      const [bp, set] = useState(() => window.innerWidth < 768 ? "m" : window.innerWidth < 1080 ? "t" : "d");
+    function useViewport() {
+      const read = () => {
+        const de = document.documentElement;
+        const vv = window.visualViewport;
+        const pick = (arr) => {
+          const ok = arr.filter(v => typeof v === "number" && v > 0);
+          return ok.length ? Math.min.apply(null, ok) : 0;
+        };
+        /* Se toma el MENOR de los tres anchos disponibles: innerWidth por sí solo
+           exagera el tamaño en los navegadores integrados de las apps */
+        const w = pick([de && de.clientWidth, vv && vv.width, window.innerWidth]) || 1024;
+        const h = pick([de && de.clientHeight, vv && vv.height, window.innerHeight]) || 800;
+        return { bp: w < 768 ? "m" : w < 1080 ? "t" : "d", compact: h < 680 };
+      };
+
+      const [vp, set] = useState(read);
+
       useEffect(() => {
-        const f = () => set(window.innerWidth < 768 ? "m" : window.innerWidth < 1080 ? "t" : "d");
-        window.addEventListener("resize", f);
-        return () => window.removeEventListener("resize", f);
+        let raf = 0;
+        const measure = () => {
+          cancelAnimationFrame(raf);
+          raf = requestAnimationFrame(() => {
+            const next = read();
+            set(prev => (prev.bp === next.bp && prev.compact === next.compact) ? prev : next);
+          });
+        };
+        measure();
+
+        window.addEventListener("resize", measure);
+        window.addEventListener("orientationchange", measure);
+        window.addEventListener("pageshow", measure);
+        if (window.visualViewport) {
+          window.visualViewport.addEventListener("resize", measure);
+          window.visualViewport.addEventListener("scroll", measure);
+        }
+        let ro = null;
+        if (window.ResizeObserver) {
+          ro = new ResizeObserver(measure);
+          ro.observe(document.documentElement);
+        }
+        /* Los webviews embebidos informan de un tamaño erróneo mientras se anima
+           la apertura de la ventana y a veces no emiten resize: se vuelve a medir */
+        const timers = [60, 250, 700, 1500, 3000].map(ms => setTimeout(measure, ms));
+
+        return () => {
+          cancelAnimationFrame(raf);
+          timers.forEach(clearTimeout);
+          window.removeEventListener("resize", measure);
+          window.removeEventListener("orientationchange", measure);
+          window.removeEventListener("pageshow", measure);
+          if (window.visualViewport) {
+            window.visualViewport.removeEventListener("resize", measure);
+            window.visualViewport.removeEventListener("scroll", measure);
+          }
+          if (ro) ro.disconnect();
+        };
       }, []);
-      return bp;
+
+      return vp;
     }
 
     /* ═══════════════════════════════════════════════
@@ -338,16 +395,17 @@
     /* ═══════════════════════════════════════════════
        SISTEMA ORBITAL
        ═══════════════════════════════════════════════ */
-    function Orbital({ activeSlide, bp, lang }) {
+    function Orbital({ activeSlide, bp, lang, compact }) {
       const t = T[lang];
       const orbitSection = SLIDES[activeSlide]?.section ?? 0;
       const accent = ORBITAL_SECTIONS[orbitSection]?.color || C.mint;
       const m = bp === "m";
+      const sm = m && compact;   /* móvil en ventana corta (webview, split view) */
 
-      const frameSize = m ? 240 : bp === "t" ? 320 : 440;
-      const orbitR = m ? 87 : bp === "t" ? 120 : 165;
-      const actSz = m ? 85 : bp === "t" ? 120 : 155;
-      const inSz = m ? 39 : bp === "t" ? 50 : 64;
+      const frameSize = sm ? 194 : m ? 240 : bp === "t" ? 320 : 440;
+      const orbitR = sm ? 70 : m ? 87 : bp === "t" ? 120 : 165;
+      const actSz = sm ? 68 : m ? 85 : bp === "t" ? 120 : 155;
+      const inSz = sm ? 32 : m ? 39 : bp === "t" ? 50 : 64;
 
       const raf = useRef();
       const circleRefs = useRef([null, null, null]);
@@ -553,11 +611,11 @@
           {/* Name */}
           <div style={{ position: "absolute", textAlign: "center", pointerEvents: "none", zIndex: 10 }}>
             <div style={{
-              fontFamily: "var(--d)", fontSize: m ? 28 : bp === "t" ? 37 : 52,
+              fontFamily: "var(--d)", fontSize: sm ? 23 : m ? 28 : bp === "t" ? 37 : 52,
               fontWeight: 600, color: C.text, lineHeight: 1.0, letterSpacing: "-0.02em",
             }}>Guillem</div>
             <div style={{
-              fontFamily: "var(--d)", fontSize: m ? 28 : bp === "t" ? 37 : 52,
+              fontFamily: "var(--d)", fontSize: sm ? 23 : m ? 28 : bp === "t" ? 37 : 52,
               fontWeight: 400, fontStyle: "italic", color: C.text, lineHeight: 1.0, letterSpacing: "-0.02em",
             }}>Ortu</div>
             <div style={{
@@ -919,8 +977,9 @@
       const [sst, setSst] = useState({ overflow: false, atBottom: true });
       const [showHelp, setShowHelp] = useState(true);
       const cooldown = useRef(false);
-      const bp = useBP();
+      const { bp, compact } = useViewport();
       const m = bp === "m";
+      const sm = m && compact;
       const scrollRef = useRef(null);
       const i = T[lang];
 
@@ -1167,7 +1226,7 @@
 
       return (
         <div style={{
-          width: "100vw", height: "100%", overflow: "hidden",
+          width: "100%", maxWidth: "100%", height: "100%", overflow: "hidden",
           display: "flex", flexDirection: m ? "column" : "row",
           background: C.bg, position: "relative",
         }}>
@@ -1203,17 +1262,17 @@
           {/* Orbital */}
           <div style={{
             width: m ? "100%" : bp === "t" ? "38%" : "42%",
-            maxWidth: m ? "none" : bp === "t" ? 360 : 520,
-            height: m ? "36%" : "100%",
-            flexShrink: 0, position: "relative",
+            maxWidth: m ? "100%" : bp === "t" ? 360 : 520,
+            height: m ? (sm ? "31%" : "36%") : "100%",
+            flexShrink: 0, position: "relative", overflow: "hidden",
             borderRight: m ? "none" : `1px solid ${C.dim}0a`,
             borderBottom: m ? `1px solid ${C.dim}0a` : "none",
           }}>
-            <Orbital activeSlide={slide} bp={bp} lang={lang} />
+            <Orbital activeSlide={slide} bp={bp} lang={lang} compact={compact} />
 
             {/* Ayuda inicial de navegación */}
             <div style={{
-              position: "absolute", bottom: m ? 8 : 48, left: 0, right: 0,
+              position: "absolute", bottom: sm ? 2 : m ? 8 : 48, left: 0, right: 0,
               display: "flex", justifyContent: "center", pointerEvents: "none",
               opacity: showHelp ? 1 : 0, transition: "opacity 0.8s ease",
             }}>
@@ -1228,11 +1287,13 @@
           </div>
 
           {/* Content */}
-          <div ref={contentColRef} style={{ flex: 1, height: m ? "64%" : "100%", position: "relative", overflow: "hidden" }}>
+          <div ref={contentColRef} style={{ flex: 1, minWidth: 0, height: m ? (sm ? "69%" : "64%") : "100%", position: "relative", overflow: "hidden" }}>
             {/* Top bar */}
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
-              padding: m ? "12px 18px 8px" : "20px 36px 12px",
+              /* el margen derecho reserva sitio para el conmutador ES/EN */
+              padding: m ? "12px 18px 8px" : "20px 150px 12px 36px",
+              gap: 12,
               background: `linear-gradient(${C.bg}, ${C.bg}e8 60%, transparent)`,
               display: "flex", justifyContent: "space-between", alignItems: "center",
               pointerEvents: "none",
@@ -1269,7 +1330,7 @@
             {/* Slide */}
             <div ref={scrollRef} data-scroll="" key={animKey + "-" + lang} style={{
               position: "absolute", inset: 0,
-              padding: m ? "46px 18px 96px" : bp === "t" ? "52px 28px 72px" : "56px 44px 72px",
+              padding: sm ? "40px 16px 88px" : m ? "46px 18px 96px" : bp === "t" ? "52px 28px 72px" : "56px 44px 72px",
               animation: enterAnim,
               overflowY: "auto", overflowX: "hidden",
             }}>
@@ -1289,8 +1350,8 @@
             {/* Footer */}
             <div style={{
               position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 12,
-              padding: m ? "8px 18px 10px" : "12px 36px 14px",
-              background: `linear-gradient(transparent, ${C.bg}e0 40%, ${C.bg})`,
+              padding: m ? "10px 18px 10px" : "14px 36px 14px",
+              background: `linear-gradient(transparent, ${C.bg}f0 42%, ${C.bg} 72%)`,
               display: "flex", justifyContent: "space-between", alignItems: "flex-end",
               pointerEvents: "none",
             }}>
