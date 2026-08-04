@@ -19,8 +19,9 @@
     html, body, #root { height: 100%; height: 100dvh; overflow: hidden; background: #0a0a0b; }
     ::selection { background: #f59e0b30; color: #e8e6e1; }
     /* Hide scrollbar but keep scrolling */
-    [data-scroll] { scrollbar-width: none; -ms-overflow-style: none; }
+    [data-scroll] { scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior: contain; }
     [data-scroll]::-webkit-scrollbar { display: none; }
+    button { font: inherit; }
     @keyframes contentUp {
       from { opacity: 0; transform: translateY(22px); }
       to { opacity: 1; transform: translateY(0); }
@@ -29,9 +30,20 @@
       from { opacity: 0; transform: translateY(-22px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    @keyframes scrollHint {
-      0%, 100% { opacity: 0.4; transform: translateY(0); }
-      50% { opacity: 0.8; transform: translateY(4px); }
+    @keyframes hintBounce {
+      0%, 100% { transform: translateY(0); opacity: 0.55; }
+      50% { transform: translateY(3px); opacity: 1; }
+    }
+    @keyframes edgeNudge {
+      0% { transform: translateY(0); }
+      25% { transform: translateY(5px); }
+      55% { transform: translateY(-3px); }
+      100% { transform: translateY(0); }
+    }
+    @keyframes edgeFlash {
+      0% { opacity: 0; }
+      25% { opacity: 1; }
+      100% { opacity: 0; }
     }
   </style>
 </head>
@@ -54,6 +66,11 @@
       mint: "#64ffda", indigo: "#818cf8", amber: "#f59e0b",
     };
 
+    const APP_URL = "https://play.google.com/store/apps/details?id=app.gilda.supernova";
+    const APP_ESSAY_ES = "https://gildanewsroom.substack.com/p/bitacora-de-una-supernova";
+    const APP_ESSAY_EN = "https://gildanewsroom.substack.com/p/logbook-of-a-supernova";
+    const APP_GAMES = ["Don't", "Let Go", "Upright", "Vigil", "Tempo", "Impulse", "Afterglow"];
+
     /* ═══════════════════════════════════════════════
        i18n
        ═══════════════════════════════════════════════ */
@@ -63,7 +80,7 @@
           { label: "Sobre Mí" },
           { label: "Periodismo" },
           { label: "GiLDa" },
-          { label: "Extensiones" },
+          { label: "Proyectos" },
         ],
         orbital: ["Sobre Mí", "Periodismo", "IA Generativa"],
         role: "Periodista · Desarrollo de Audiencias · Creador",
@@ -76,6 +93,7 @@
           { text: "El Periódico · Desarrollo de Audiencias" },
           { text: "IEBS School · Máster IA + SEO" },
           { text: "GiLDa" },
+          { text: "GiLDa Studio · Supernova" },
         ],
         journalTitle: "Periodista &",
         journalTitle2: "Desarrollador de Audiencias",
@@ -97,14 +115,22 @@
           { title: "¡Tierra, trágame!", sub: "Seguimos mirando las interfaces mientras lo invisible gana terreno", quote: "Seguimos mirando las interfaces mientras lo invisible gana terreno bajo nuestros pies" },
           { title: "Demasiado real", sub: "Notas sobre la inteligencia artificial general y la tentación del exceso", quote: "Notas sobre la inteligencia artificial general y la tentación del exceso" },
           { title: "Sin previo aviso", sub: "Sobre el espejismo de la lucidez y los paralelismos entre el aprendizaje humano y el de la inteligencia artificial", quote: "Sobre el espejismo de la lucidez y los paralelismos entre el aprendizaje humano y el de la inteligencia artificial" },
+          { title: "Bitácora de una supernova", sub: "Cómo hacer una app en una semana con menos de 50 euros y sin saber programar", quote: "La ventana está abierta; solo hay que asomarse" },
         ],
         gildaTitle: "Newsletter GiLDa",
         gildaDesc: "Ensayos semanales sobre las implicaciones de la IA. Cada sábado.",
         gildaAll: "Todas las publicaciones en Substack →",
         gildaAllUrl: "http://gildanewsroom.substack.com/",
         read: "LEER →",
+        projTitle: "Proyectos",
+        projDesc: ["Del navegador a la Play Store: ", "ocho extensiones y una app", " publicadas hasta la fecha. Herramientas que agilizan flujos de trabajo, con interfaz intuitiva y diseño cuidado."],
+        appBadge: "App · Android",
+        appNew: "Nuevo",
+        appTagline: "Siete luces, una mente. Siete pruebas arcade de concentración, nervio y memoria.",
+        appDesc: "Siete minijuegos minimalistas reunidos en una misma constelación. Funciona sin conexión, sin cuentas y sin recopilación de datos. Desarrollada de cero y publicada en Google Play bajo el sello GiLDa Studio.",
+        appLink: "Google Play →",
+        appEssay: "Cómo la hice →",
         extTitle: "Extensiones de Chrome",
-        extDesc: ["Herramientas que agilizan flujos de trabajo. Más de ", "8 extensiones", " hasta la fecha — interfaz intuitiva y diseño cuidado."],
         extDescs: [
           "Portapapeles inteligente: guarda lo copiado y reabre la página de origen",
           "Extracción automatizada de datos estructurados",
@@ -117,15 +143,18 @@
         ],
         extStatuses: { "Pública": "Pública", "Dev": "Dev" },
         masterNote: "",
-        scroll: "Scroll",
-        swipe: "Swipe",
+        navRead: "Sigue leyendo",
+        navNext: "Siguiente",
+        navNextShort: "Siguiente sección",
+        navHelp: "Desliza para cambiar de sección",
+        navHelpDesktop: "Scroll o ↑ ↓ para cambiar de sección",
       },
       en: {
         slides: [
           { label: "About Me" },
           { label: "Journalism" },
           { label: "GiLDa" },
-          { label: "Extensions" },
+          { label: "Projects" },
         ],
         orbital: ["About Me", "Journalism", "Generative AI"],
         role: "Journalist · Audience Development · Creator",
@@ -138,6 +167,7 @@
           { text: "El Periódico · Audience Development" },
           { text: "IEBS School · Master's AI + SEO" },
           { text: "GiLDa" },
+          { text: "GiLDa Studio · Supernova" },
         ],
         journalTitle: "Journalist &",
         journalTitle2: "Audience Developer",
@@ -159,14 +189,22 @@
           { title: "Swallow Me Whole!", sub: "We keep staring at the interfaces while the invisible gains ground", quote: "We keep staring at the interfaces while the invisible gains ground beneath our feet" },
           { title: "Too Real", sub: "Notes on Artificial General Intelligence and the Temptation of Excess", quote: "Notes on Artificial General Intelligence and the Temptation of Excess" },
           { title: "Without warning", sub: "On the mirage of insight and the parallels between human learning and that of artificial intelligence", quote: "On the mirage of insight and the parallels between human learning and that of artificial intelligence" },
+          { title: "Logbook of a Supernova", sub: "How to build an app in a week for under 50 euros, with no coding skills", quote: "The window is open; you just have to lean out" },
         ],
         gildaTitle: "GiLDa Newsletter",
         gildaDesc: "Weekly essays on the implications of AI. Every Saturday.",
         gildaAll: "All publications on Substack →",
         gildaAllUrl: "https://gildanewsroom.substack.com/s/gilda-en",
         read: "READ →",
+        projTitle: "Projects",
+        projDesc: ["From the browser to the Play Store: ", "eight extensions and one app", " published to date. Tools that streamline workflows, with an intuitive interface and polished design."],
+        appBadge: "App · Android",
+        appNew: "New",
+        appTagline: "Seven lights, one mind. Seven arcade trials of focus, nerve and memory.",
+        appDesc: "Seven minimalist minigames gathered into a single constellation. Runs fully offline, no accounts, no data collection. Built from scratch and published on Google Play under the GiLDa Studio label.",
+        appLink: "Google Play →",
+        appEssay: "How I built it →",
         extTitle: "Chrome Extensions",
-        extDesc: ["Tools that streamline workflows. Over ", "8 extensions", " to date — intuitive interface and polished design."],
         extDescs: [
           "Smart clipboard: saves copied content and reopens the source page",
           "Automated structured data extraction",
@@ -179,8 +217,11 @@
         ],
         extStatuses: { "Pública": "Public", "Dev": "Dev" },
         masterNote: "",
-        scroll: "Scroll",
-        swipe: "Swipe",
+        navRead: "Keep reading",
+        navNext: "Next",
+        navNextShort: "Next section",
+        navHelp: "Swipe to change section",
+        navHelpDesktop: "Scroll or ↑ ↓ to change section",
       },
     };
 
@@ -188,7 +229,7 @@
       { id: "about",   section: 0, label: "Sobre Mí",   num: "01", color: C.mint },
       { id: "journal", section: 1, label: "Periodismo",  num: "02", color: C.indigo },
       { id: "gilda",   section: 2, label: "GiLDa",       num: "03", color: C.amber },
-      { id: "tools",   section: 2, label: "Extensiones", num: "03", color: C.amber },
+      { id: "tools",   section: 2, label: "Proyectos",   num: "03", color: C.amber },
     ];
 
     const ORBITAL_SECTIONS = [
@@ -208,6 +249,7 @@
       { num: "08", title: "¡Tierra, trágame!", sub: "Seguimos mirando las interfaces mientras lo invisible gana terreno bajo nuestros pies", date: "22 mar", quote: "Seguimos mirando las interfaces mientras lo invisible gana terreno bajo nuestros pies", url: "https://gildanewsroom.substack.com/p/tierra-tragame", urlEn: "https://gildanewsroom.substack.com/p/swallow-me-whole" },
       { num: "09", title: "Demasiado real", sub: "Notas sobre la inteligencia artificial general y la tentación del exceso", date: "27 abr", quote: "Notas sobre la inteligencia artificial general y la tentación del exceso", url: "https://gildanewsroom.substack.com/p/demasiado-real", urlEn: "https://gildanewsroom.substack.com/p/too-real" },
       { num: "10", title: "Sin previo aviso", sub: "Sobre el espejismo de la lucidez y los paralelismos entre el aprendizaje humano y el de la inteligencia artificial", date: "31 may", quote: "Sobre el espejismo de la lucidez y los paralelismos entre el aprendizaje humano y el de la inteligencia artificial", url: "https://gildanewsroom.substack.com/p/sin-previo-aviso", urlEn: "https://gildanewsroom.substack.com/p/without-warning" },
+      { num: "11", title: "Bitácora de una supernova", sub: "Cómo hacer una app en una semana con menos de 50 euros y sin saber programar", date: "12 jul", quote: "La ventana está abierta; solo hay que asomarse", url: APP_ESSAY_ES, urlEn: APP_ESSAY_EN },
     ];
 
     const EXTENSIONS = [
@@ -228,6 +270,7 @@
       { year: "2023", text: "El Periódico · Desarrollo de Audiencias", on: true },
       { year: "2025", text: "IEBS School · Máster IA + SEO", on: true },
       { year: "2026", text: "GiLDa", on: true },
+      { year: "2026", text: "GiLDa Studio · Supernova", on: true },
     ];
 
     /* ═══════════════════════════════════════════════
@@ -314,6 +357,8 @@
       const pathRef = useRef(null);
 
       const timeRef = useRef(0);
+      const selfAngles = useRef([0, 0, 0]);
+      const pathAngle = useRef(0);
       const angleOffset = useRef(0);
       const targetOffset = useRef(0);
       const prevSection = useRef(orbitSection);
@@ -343,7 +388,9 @@
           if (burstSpeed.current < 0.01) burstSpeed.current = 0;
 
           const speed = BASE_SPEED + burstSpeed.current;
+          const boost = speed / BASE_SPEED;
           timeRef.current += dt * speed;
+          pathAngle.current += dt * 15 * boost * 0.12;
 
           const diff = targetOffset.current - angleOffset.current;
           angleOffset.current += diff * LERP * dt;
@@ -371,8 +418,9 @@
             el.style.transform = `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`;
 
             if (inner) {
-              const selfDeg = t * SELF_SPEEDS[i] * (1 / speed) * BASE_SPEED * 60;
-              inner.style.transform = `rotate(${selfDeg}deg)`;
+              /* Acumulador propio: evita el salto de rotación al acelerar */
+              selfAngles.current[i] += dt * SELF_SPEEDS[i] * boost;
+              inner.style.transform = `rotate(${selfAngles.current[i]}deg)`;
             }
 
             if (glow) {
@@ -406,7 +454,7 @@
           }
 
           if (pathRef.current) {
-            pathRef.current.style.transform = `rotate(${t * 15}deg)`;
+            pathRef.current.style.transform = `rotate(${pathAngle.current}deg)`;
           }
 
           raf.current = requestAnimationFrame(tick);
@@ -571,7 +619,7 @@
           <div style={{
             display: "flex", flexDirection: "column",
             gap: m ? 5 : 7, marginBottom: m ? 16 : 22,
-            ...(m ? { borderLeft: `1px solid ${C.mint}1e`, paddingLeft: 14, marginLeft: 2 } : { borderLeft: `1px solid ${C.mint}1e`, paddingLeft: 16, marginLeft: 2 }),
+            borderLeft: `1px solid ${C.mint}1e`, paddingLeft: m ? 14 : 16, marginLeft: 2,
           }}>
             {TIMELINE.map((tl, idx) => (
               <div key={idx} style={{ display: "flex", gap: m ? 8 : 11, alignItems: "baseline" }}>
@@ -674,20 +722,106 @@
       );
     }
 
+    /* ── Marca orbital de Supernova (guiño al menú de la app) ── */
+    function SupernovaMark({ size }) {
+      const r = size / 2;
+      const ring = r * 0.66;
+      return (
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: "block", flexShrink: 0 }}>
+          <circle cx={r} cy={r} r={ring} fill="none" stroke={C.amber} strokeOpacity="0.16" strokeWidth="1" strokeDasharray="2 3" />
+          <circle cx={r} cy={r} r={r * 0.16} fill={C.amber} fillOpacity="0.5" />
+          <circle cx={r} cy={r} r={r * 0.3} fill="none" stroke={C.amber} strokeOpacity="0.22" strokeWidth="1" />
+          {APP_GAMES.map((g, k) => {
+            const a = (k / APP_GAMES.length) * Math.PI * 2 - Math.PI / 2;
+            return <circle key={k} cx={r + Math.cos(a) * ring} cy={r + Math.sin(a) * ring} r={k === 0 ? 2.6 : 1.9} fill={C.amber} fillOpacity={k === 0 ? 0.75 : 0.4} />;
+          })}
+        </svg>
+      );
+    }
+
     function SlideTools({ bp, lang }) {
       const m = bp === "m";
       const i = T[lang];
       const [hov, setHov] = useState(-1);
+      const [appHov, setAppHov] = useState(false);
       const sc = { "Pública": C.mint, "Dev": C.amber };
       return (
         <div>
-          <div style={{ marginBottom: m ? 12 : 16 }}>
+          <div style={{ marginBottom: m ? 14 : 18 }}>
             <h2 style={{ fontFamily: "var(--d)", fontSize: m ? 24 : "clamp(26px,3vw,36px)", fontWeight: 600, color: C.text, lineHeight: 1.2, marginBottom: 5 }}>
-              {i.extTitle}
+              {i.projTitle}
             </h2>
-            <p style={{ fontFamily: "var(--b)", fontSize: m ? 13 : 14.5, color: C.muted, lineHeight: 1.55, maxWidth: 480 }}>
-              {i.extDesc[0]}<strong style={{ color: C.text, fontWeight: 500 }}>{i.extDesc[1]}</strong>{i.extDesc[2]}
+            <p style={{ fontFamily: "var(--b)", fontSize: m ? 13 : 14.5, color: C.muted, lineHeight: 1.55, maxWidth: 520 }}>
+              {i.projDesc[0]}<strong style={{ color: C.text, fontWeight: 500 }}>{i.projDesc[1]}</strong>{i.projDesc[2]}
             </p>
+          </div>
+
+          {/* ── App destacada: Supernova ── */}
+          <div
+            onMouseEnter={() => setAppHov(true)} onMouseLeave={() => setAppHov(false)}
+            style={{
+              position: "relative", overflow: "hidden",
+              borderRadius: 12, marginBottom: m ? 18 : 24,
+              padding: m ? "16px 16px 14px" : "20px 22px 18px",
+              background: `linear-gradient(135deg, ${C.amber}0b, ${C.bg2} 55%, ${C.bg2})`,
+              border: `1px solid ${appHov ? C.amber + "30" : C.amber + "16"}`,
+              boxShadow: appHov ? `0 6px 26px ${C.amber}08` : "none",
+              transition: "all 0.35s cubic-bezier(0.16,1,0.3,1)",
+            }}>
+            <div style={{
+              position: "absolute", top: -60, right: -60, width: 200, height: 200, borderRadius: "50%",
+              background: `radial-gradient(circle, ${C.amber}0e 0%, transparent 65%)`, pointerEvents: "none",
+            }} />
+
+            <div style={{ display: "flex", alignItems: "flex-start", gap: m ? 13 : 18, position: "relative" }}>
+              <SupernovaMark size={m ? 46 : 62} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 5 }}>
+                  <span style={{
+                    fontFamily: "var(--m)", fontSize: 9.5, color: C.amber, letterSpacing: "0.09em",
+                    textTransform: "uppercase", padding: "2px 7px", borderRadius: 3, border: `1px solid ${C.amber}25`,
+                  }}>{i.appBadge}</span>
+                  <span style={{
+                    fontFamily: "var(--m)", fontSize: 9.5, color: C.mint, letterSpacing: "0.09em",
+                    textTransform: "uppercase", padding: "2px 7px", borderRadius: 3, border: `1px solid ${C.mint}25`,
+                  }}>{i.appNew}</span>
+                  <span style={{ fontFamily: "var(--m)", fontSize: 10, color: C.dim, letterSpacing: "0.05em" }}>GiLDa Studio</span>
+                </div>
+                <h3 style={{ fontFamily: "var(--d)", fontSize: m ? 21 : 26, fontWeight: 600, color: C.text, lineHeight: 1.15, letterSpacing: "-0.01em", marginBottom: 4 }}>
+                  Supernova
+                </h3>
+                <p style={{ fontFamily: "var(--b)", fontSize: m ? 12.5 : 13.5, color: C.amber + "9a", lineHeight: 1.45, fontStyle: "italic", marginBottom: 8 }}>
+                  {i.appTagline}
+                </p>
+                <p style={{ fontFamily: "var(--b)", fontSize: m ? 12.5 : 13.5, color: C.muted, lineHeight: 1.55, marginBottom: 11 }}>
+                  {i.appDesc}
+                </p>
+
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 13 }}>
+                  {APP_GAMES.map(g => (
+                    <span key={g} style={{
+                      fontFamily: "var(--m)", fontSize: m ? 9.5 : 10, color: C.muted,
+                      letterSpacing: "0.06em", textTransform: "uppercase",
+                      padding: "3px 8px", borderRadius: 4,
+                      background: C.bg3, border: `1px solid ${C.dim}1e`,
+                    }}>{g}</span>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+                  <Lnk href={APP_URL} color={C.amber}>{i.appLink}</Lnk>
+                  <Lnk href={lang === "en" ? APP_ESSAY_EN : APP_ESSAY_ES} color={C.mint}>{i.appEssay}</Lnk>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Extensiones ── */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: m ? 8 : 10 }}>
+            <span style={{ fontFamily: "var(--m)", fontSize: m ? 10 : 10.5, color: C.dim, letterSpacing: "0.12em", textTransform: "uppercase", whiteSpace: "nowrap" }}>
+              {i.extTitle}
+            </span>
+            <span style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${C.dim}22, transparent)` }} />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -739,6 +873,39 @@
     }
 
     /* ═══════════════════════════════════════════════
+       INDICADOR DE NAVEGACIÓN
+       Comunica en todo momento qué hará el siguiente gesto:
+       leer dentro de la sección o saltar a la siguiente.
+       ═══════════════════════════════════════════════ */
+    function NavCue({ label, color, m, up, nudge, onClick }) {
+      const [h, setH] = useState(false);
+      return (
+        <button
+          key={"cue-" + nudge}
+          onClick={onClick}
+          onMouseEnter={() => setH(true)} onMouseLeave={() => setH(false)}
+          style={{
+            pointerEvents: "auto", background: "transparent", border: "none",
+            cursor: "pointer", padding: "2px 10px",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+            animation: nudge > 0 ? "edgeNudge 0.6s cubic-bezier(0.16,1,0.3,1)" : "none",
+          }}>
+          <span style={{
+            fontFamily: "var(--m)", fontSize: m ? 9 : 9.5, letterSpacing: "0.1em",
+            textTransform: "uppercase", whiteSpace: "nowrap",
+            color: h ? color : C.dim + "b0", transition: "color 0.3s",
+          }}>{label}</span>
+          <svg width="12" height="7" viewBox="0 0 12 7" style={{
+            transform: up ? "rotate(180deg)" : "none",
+            animation: "hintBounce 2.2s ease-in-out infinite",
+          }}>
+            <path d="M1 1.2L6 5.8L11 1.2" fill="none" stroke={h ? color : C.dim} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      );
+    }
+
+    /* ═══════════════════════════════════════════════
        APP
        ═══════════════════════════════════════════════ */
     function App() {
@@ -747,6 +914,10 @@
       const [animKey, setAnimKey] = useState(0);
       const [lang, setLang] = useState("es");
       const [langHov, setLangHov] = useState(false);
+      const [dotHov, setDotHov] = useState(-1);
+      const [nudge, setNudge] = useState(0);
+      const [sst, setSst] = useState({ overflow: false, atBottom: true });
+      const [showHelp, setShowHelp] = useState(true);
       const cooldown = useRef(false);
       const bp = useBP();
       const m = bp === "m";
@@ -755,16 +926,34 @@
 
       const lastWheelTime = useRef(0);
       const gestureStartTop = useRef(null);
+      const contentColRef = useRef(null);
+      const slideRef = useRef(0);
 
-      const go = useCallback((delta) => {
+      const goTo = useCallback((idx, dir) => {
         if (cooldown.current) return;
-        const next = (slide + delta + SLIDES.length) % SLIDES.length;
+        const len = SLIDES.length;
+        const prev = slideRef.current;
+        const next = ((idx % len) + len) % len;   /* ciclo infinito */
+        if (next === prev) return;
         cooldown.current = true;
-        setDirection(delta);
+        slideRef.current = next;
+        setDirection(dir !== undefined ? dir : (next > prev ? 1 : -1));
         setSlide(next);
         setAnimKey(k => k + 1);
         setTimeout(() => { cooldown.current = false; }, 700);
-      }, [slide]);
+      }, []);
+
+      const go = useCallback((delta) => goTo(slideRef.current + delta, delta > 0 ? 1 : -1), [goTo]);
+
+      /* Aviso de borde, limitado en frecuencia: el scroll inercial
+         emite decenas de eventos seguidos contra el mismo muro. */
+      const lastBump = useRef(0);
+      const bump = useCallback(() => {
+        const now = performance.now();
+        if (now - lastBump.current < 900) return;
+        lastBump.current = now;
+        setNudge(n => n + 1);
+      }, []);
 
       /* Reset scroll to top after new slide mounts */
       useEffect(() => {
@@ -776,54 +965,104 @@
         return () => cancelAnimationFrame(raf);
       }, [animKey]);
 
-      /* ── WHEEL (desktop / trackpad) ── 
-         Mirrors the mobile touch logic exactly:
-         "Was I already at the boundary when this gesture started?"
-         - Yes → change section
-         - No  → wall (the gesture scrolled me here, don't jump)
+      /* Ayuda inicial: se muestra unos segundos en la primera carga */
+      useEffect(() => {
+        const t = setTimeout(() => setShowHelp(false), 5200);
+        return () => clearTimeout(t);
+      }, []);
+      useEffect(() => { if (animKey > 0) setShowHelp(false); }, [animKey]);
+
+      /* Estado de scroll del panel de contenido (para el indicador) */
+      useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        const update = () => {
+          const overflow = el.scrollHeight > el.clientHeight + 10;
+          const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 14;
+          setSst(prev => (prev.overflow === overflow && prev.atBottom === atBottom) ? prev : { overflow, atBottom });
+        };
+        update();
+        const t1 = setTimeout(update, 120);
+        const t2 = setTimeout(update, 600);
+        el.addEventListener("scroll", update, { passive: true });
+        window.addEventListener("resize", update);
+        return () => {
+          clearTimeout(t1); clearTimeout(t2);
+          el.removeEventListener("scroll", update);
+          window.removeEventListener("resize", update);
+        };
+      }, [animKey, lang, bp]);
+
+      /* Avance por teclado / clic: lee dentro de la sección o salta */
+      const step = useCallback((dir) => {
+        const el = scrollRef.current;
+        if (el) {
+          const hasScroll = el.scrollHeight > el.clientHeight + 10;
+          const atTop = el.scrollTop <= 2;
+          const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 14;
+          if (hasScroll && ((dir > 0 && !atBottom) || (dir < 0 && !atTop))) {
+            el.scrollBy({ top: dir * Math.round(el.clientHeight * 0.7), behavior: "smooth" });
+            return;
+          }
+        }
+        go(dir);
+      }, [go]);
+
+      /* ── WHEEL (desktop / trackpad) ──
+         Espeja la lógica táctil: "¿ya estaba en el borde cuando empezó el gesto?"
+         - Sí → cambia de sección
+         - No → muro + aviso visual (el gesto solo te ha traído hasta aquí)
       */
       useEffect(() => {
         const GESTURE_GAP = 150;
 
         const handler = (e) => {
+          if (e.ctrlKey) return;                     /* respeta el zoom del navegador */
           if (Math.abs(e.deltaY) < 3) return;
           const el = scrollRef.current;
-          if (!el) return;
           const down = e.deltaY > 0;
           const now = performance.now();
           const gap = now - lastWheelTime.current;
 
-          /* Detect new gesture: first event, or gap since last event */
+          /* ¿El puntero está sobre la columna de contenido?
+             Se mide por geometría: la barra superior y el pie flotan encima
+             del panel y romperían la comprobación por contención en el DOM. */
+          const rect = contentColRef.current ? contentColRef.current.getBoundingClientRect() : null;
+          const overContent = !!(rect && e.clientX >= rect.left && e.clientX <= rect.right
+            && e.clientY >= rect.top && e.clientY <= rect.bottom);
+
+          /* Detecta nuevo gesto: primer evento o pausa desde el último */
           if (gestureStartTop.current === null || gap > GESTURE_GAP) {
-            gestureStartTop.current = el.scrollTop;
+            gestureStartTop.current = el ? el.scrollTop : 0;
           }
           lastWheelTime.current = now;
 
-          const atTop = el.scrollTop <= 2;
-          const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
-          const hasScroll = el.scrollHeight > el.clientHeight + 10;
+          if (el && overContent) {
+            const atTop = el.scrollTop <= 2;
+            const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 10;
+            const hasScroll = el.scrollHeight > el.clientHeight + 10;
 
-          if (hasScroll) {
-            const atBoundary = (down && atBottom) || (!down && atTop);
+            if (hasScroll) {
+              const atBoundary = (down && atBottom) || (!down && atTop);
 
-            if (!atBoundary) {
-              /* Not at boundary — let browser scroll normally */
-              return;
+              if (!atBoundary) {
+                /* Aún queda contenido: scroll normal del navegador */
+                return;
+              }
+
+              /* En el borde: ¿ya estaba ahí cuando empezó el gesto? */
+              const gsTop = gestureStartTop.current;
+              const wasAtTop = gsTop <= 2;
+              const wasAtBottom = gsTop + el.clientHeight >= el.scrollHeight - 10;
+              const wasAtBoundary = (down && wasAtBottom) || (!down && wasAtTop);
+
+              if (!wasAtBoundary) {
+                /* Este gesto me ha traído AL borde — muro + aviso */
+                e.preventDefault();
+                bump();
+                return;
+              }
             }
-
-            /* At boundary — was I ALREADY here when this gesture started? */
-            const gsTop = gestureStartTop.current;
-            const wasAtTop = gsTop <= 2;
-            const wasAtBottom = gsTop + el.clientHeight >= el.scrollHeight - 10;
-            const wasAtBoundary = (down && wasAtBottom) || (!down && wasAtTop);
-
-            if (!wasAtBoundary) {
-              /* This gesture scrolled me TO the boundary — WALL */
-              e.preventDefault();
-              return;
-            }
-
-            /* I was already at boundary when gesture started — pass through */
           }
 
           e.preventDefault();
@@ -832,7 +1071,7 @@
 
         window.addEventListener("wheel", handler, { passive: false });
         return () => window.removeEventListener("wheel", handler);
-      }, [go]);
+      }, [go, bump]);
 
       /* ── TOUCH (mobile / tablet) ── */
       useEffect(() => {
@@ -861,11 +1100,10 @@
               const atBoundary = (down && atBottom) || (!down && atTop);
               if (!atBoundary) return;
 
-              /* On touch, check if we were already at boundary when gesture started */
               const wasAtTop = startScrollTop <= 2;
               const wasAtBottom = startScrollTop + el.clientHeight >= el.scrollHeight - 40;
               const wasAtBoundary = (down && wasAtBottom) || (!down && wasAtTop);
-              if (!wasAtBoundary) return; /* gesture scrolled TO boundary, don't jump yet */
+              if (!wasAtBoundary) { bump(); return; }
             }
           }
 
@@ -874,7 +1112,33 @@
         window.addEventListener("touchstart", onStart, { passive: true });
         window.addEventListener("touchend", onEnd, { passive: true });
         return () => { window.removeEventListener("touchstart", onStart); window.removeEventListener("touchend", onEnd); };
-      }, [go]);
+      }, [go, bump]);
+
+      /* ── TECLADO ── */
+      useEffect(() => {
+        const onKey = (e) => {
+          if (e.metaKey || e.ctrlKey || e.altKey) return;
+          const tag = e.target && e.target.tagName;
+          if (e.key === " " && (tag === "BUTTON" || tag === "A" || tag === "INPUT" || tag === "TEXTAREA")) return;
+          switch (e.key) {
+            case "ArrowDown": case "PageDown": case " ":
+              e.preventDefault(); step(1); break;
+            case "ArrowUp": case "PageUp":
+              e.preventDefault(); step(-1); break;
+            case "ArrowRight":
+              e.preventDefault(); go(1); break;
+            case "ArrowLeft":
+              e.preventDefault(); go(-1); break;
+            case "Home":
+              e.preventDefault(); goTo(0); break;
+            case "End":
+              e.preventDefault(); goTo(SLIDES.length - 1); break;
+            default: break;
+          }
+        };
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+      }, [step, go, goTo]);
 
       const current = SLIDES[slide];
       const slideLabel = i.slides[slide]?.label || current.label;
@@ -889,6 +1153,18 @@
         ? "contentUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards"
         : "contentDown 0.5s cubic-bezier(0.16,1,0.3,1) forwards";
 
+      /* Modo del indicador: leer dentro de la sección o saltar a la siguiente
+         (la última enlaza con la primera: el recorrido es un ciclo) */
+      const nextIdx = (slide + 1) % SLIDES.length;
+      const reading = sst.overflow && !sst.atBottom;
+      const cueMode = reading ? "read" : "next";
+      const nextLabel = i.slides[nextIdx]?.label || SLIDES[nextIdx].label;
+      const cueLabel = cueMode === "read"
+        ? i.navRead
+        : (m ? i.navNextShort : `${i.navNext} · ${nextLabel}`);
+      const cueColor = cueMode === "read" ? current.color : SLIDES[nextIdx].color;
+      const cueClick = () => { if (cueMode === "read") step(1); else go(1); };
+
       return (
         <div style={{
           width: "100vw", height: "100%", overflow: "hidden",
@@ -900,6 +1176,7 @@
             onClick={() => setLang(l => l === "es" ? "en" : "es")}
             onMouseEnter={() => setLangHov(true)}
             onMouseLeave={() => setLangHov(false)}
+            aria-label="ES / EN"
             style={{
               position: "absolute", top: m ? 10 : 16, right: m ? 14 : 20, zIndex: 50,
               background: langHov ? C.bg3 : C.bg2,
@@ -914,10 +1191,7 @@
               fontWeight: lang === "es" ? 500 : 400,
               transition: "color 0.3s",
             }}>ES</span>
-            <span style={{
-              width: 1, height: 12,
-              background: C.dim + "40",
-            }} />
+            <span style={{ width: 1, height: 12, background: C.dim + "40" }} />
             <span style={{
               fontFamily: "var(--m)", fontSize: m ? 10.5 : 11.5,
               color: lang === "en" ? C.text : C.dim,
@@ -936,10 +1210,25 @@
             borderBottom: m ? `1px solid ${C.dim}0a` : "none",
           }}>
             <Orbital activeSlide={slide} bp={bp} lang={lang} />
+
+            {/* Ayuda inicial de navegación */}
+            <div style={{
+              position: "absolute", bottom: m ? 8 : 48, left: 0, right: 0,
+              display: "flex", justifyContent: "center", pointerEvents: "none",
+              opacity: showHelp ? 1 : 0, transition: "opacity 0.8s ease",
+            }}>
+              <span style={{
+                fontFamily: "var(--m)", fontSize: m ? 9 : 10, color: C.dim + "90",
+                letterSpacing: "0.09em", textTransform: "uppercase",
+                padding: "5px 11px", borderRadius: 20,
+                background: C.bg2 + "cc", border: `1px solid ${C.dim}1a`,
+                whiteSpace: "nowrap",
+              }}>{m ? i.navHelp : i.navHelpDesktop}</span>
+            </div>
           </div>
 
           {/* Content */}
-          <div style={{ flex: 1, height: m ? "64%" : "100%", position: "relative", overflow: "hidden" }}>
+          <div ref={contentColRef} style={{ flex: 1, height: m ? "64%" : "100%", position: "relative", overflow: "hidden" }}>
             {/* Top bar */}
             <div style={{
               position: "absolute", top: 0, left: 0, right: 0, zIndex: 10,
@@ -954,13 +1243,25 @@
               }}>
                 {current.num} — {slideLabel}
               </span>
-              <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+              <div style={{ display: "flex", gap: 2, alignItems: "center", pointerEvents: "auto" }}>
                 {SLIDES.map((s, idx) => (
-                  <div key={idx} style={{
-                    width: idx === slide ? 20 : 6, height: 6, borderRadius: 3,
-                    background: idx === slide ? s.color : C.dim + "30",
-                    transition: "all 0.5s cubic-bezier(0.16,1,0.3,1)",
-                  }} />
+                  <button key={idx}
+                    onClick={() => goTo(idx)}
+                    onMouseEnter={() => setDotHov(idx)}
+                    onMouseLeave={() => setDotHov(-1)}
+                    title={i.slides[idx]?.label || s.label}
+                    aria-label={i.slides[idx]?.label || s.label}
+                    style={{
+                      background: "transparent", border: "none", cursor: "pointer",
+                      padding: m ? "8px 3px" : "9px 4px", display: "flex", alignItems: "center",
+                    }}>
+                    <span style={{
+                      display: "block",
+                      width: idx === slide ? 20 : 6, height: 6, borderRadius: 3,
+                      background: idx === slide ? s.color : (dotHov === idx ? C.text + "55" : C.dim + "30"),
+                      transition: "all 0.5s cubic-bezier(0.16,1,0.3,1)",
+                    }} />
+                  </button>
                 ))}
               </div>
             </div>
@@ -968,7 +1269,7 @@
             {/* Slide */}
             <div ref={scrollRef} data-scroll="" key={animKey + "-" + lang} style={{
               position: "absolute", inset: 0,
-              padding: m ? "46px 18px 90px" : bp === "t" ? "52px 28px 60px" : "56px 44px 60px",
+              padding: m ? "46px 18px 96px" : bp === "t" ? "52px 28px 72px" : "56px 44px 72px",
               animation: enterAnim,
               overflowY: "auto", overflowX: "hidden",
             }}>
@@ -977,10 +1278,18 @@
               </div>
             </div>
 
+            {/* Aviso de borde: destello al llegar al final del contenido */}
+            <div key={"flash-" + nudge} style={{
+              position: "absolute", left: 0, right: 0, bottom: m ? 44 : 52, height: 1, zIndex: 11,
+              background: `linear-gradient(90deg, transparent, ${current.color}70, transparent)`,
+              opacity: 0, pointerEvents: "none",
+              animation: nudge > 0 ? "edgeFlash 0.7s ease-out" : "none",
+            }} />
+
             {/* Footer */}
             <div style={{
-              position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 10,
-              padding: m ? "8px 18px 10px" : "12px 36px 16px",
+              position: "absolute", bottom: 0, left: 0, right: 0, zIndex: 12,
+              padding: m ? "8px 18px 10px" : "12px 36px 14px",
               background: `linear-gradient(transparent, ${C.bg}e0 40%, ${C.bg})`,
               display: "flex", justifyContent: "space-between", alignItems: "flex-end",
               pointerEvents: "none",
@@ -988,16 +1297,14 @@
               <span style={{ fontFamily: "var(--m)", fontSize: 10, color: C.dim + "45", letterSpacing: "0.1em" }}>
                 © 2026 GUILLEM ORTU
               </span>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                <span style={{ fontFamily: "var(--m)", fontSize: 9.5, color: C.dim + "55", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-                  {m ? i.swipe : i.scroll}
-                </span>
-                <div style={{
-                  width: 1, height: 16,
-                  background: `linear-gradient(${C.dim}20, ${C.dim}60)`,
-                  animation: "scrollHint 2s ease-in-out infinite",
-                }} />
-              </div>
+              <NavCue
+                label={cueLabel}
+                color={cueColor}
+                m={m}
+                up={false}
+                nudge={nudge}
+                onClick={cueClick}
+              />
               <span style={{ fontFamily: "var(--m)", fontSize: 10, color: C.dim + "45", letterSpacing: "0.1em" }}>
                 BARCELONA
               </span>
